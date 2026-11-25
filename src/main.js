@@ -498,6 +498,7 @@ function openCreate() {
   openSheet(`<h2>${t('newBlock')}</h2>${blockForm(null)}<button class="pill-btn accent big" type="button" id="cGo">${t('create')}</button>`, (sh) => {
     wireForm(sh, f, (title) => {
       const b = makeBlock({ title, ...f });
+      state.blocks = state.blocks.filter((x) => !(x.intro && isDone(x))); // färdigt intro behövs inte längre
       state.blocks.unshift(b); save(true); closeSheet();
       audio.unlock(); audio.settle(); haptic.snap();
       openPad(b.id, true);

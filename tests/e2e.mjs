@@ -106,6 +106,10 @@ await test('riv hela intro-blocket → tom kartong med knapp till första blocke
   await page.screenshot({ path: SHOTS + '05-intro-done.png' });
   await page.click('#firstBtn');
   await page.waitForSelector('#cTitle');
+  await page.fill('#cTitle', 'Yoga');
+  await page.click('#cGo');
+  await page.click('#backBtn');
+  assert.equal(await page.locator('text=Så funkar Rivblock').count(), 0, 'färdigt intro ska försvinna');
   await ctx.close();
 });
 
@@ -226,6 +230,28 @@ await test('webbläsarens bakåt: stänger blocket, och mall fyller i antal och 
   await page.waitForTimeout(150);
   assert.equal(await page.locator('#padView').isHidden(), true);
   assert.equal(await page.locator('#scrim').count(), 0);
+  await ctx.close();
+});
+
+await test('riktigt fingersvep (touch) river av, lodrätt svep gör det inte', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true, locale: 'sv-SE', reducedMotion: 'reduce' });
+  ctx.setDefaultTimeout(6000);
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(URL_);
+  await page.waitForSelector('#active');
+  const cdp = await ctx.newCDPSession(page);
+  const swipe = async (x0, y0, dx, dy, steps = 20) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] });
+    for (let i = 1; i <= steps; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (dx * i) / steps, y: y0 + (dy * i) / steps }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(80);
+  };
+  const box = await page.locator('#active .tbody').boundingBox();
+  await swipe(box.x + box.width - 14, box.y + 24, 0, 220); // lodrätt
+  assert.equal(await binding(page), '5 KVAR');
+  await swipe(box.x + box.width - 14, box.y + 24, -330, 10); // höger till vänster
+  assert.equal(await binding(page), '4 KVAR');
   await ctx.close();
 });
 
