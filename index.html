@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rivblock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Ett rivblock för varje mål. Riv av en lapp när du gjort det.">
+<meta name="theme-color" content="#e9e8ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16151b" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rivblock">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
+</head>
+<body>
+<div class="app" id="app">
+  <section class="view" id="shelfView" aria-label="Rivblock"></section>
+  <section class="view" id="padView" hidden></section>
+</div>
+<div id="overlay"></div>
+<div id="live" class="sr-only" aria-live="polite"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

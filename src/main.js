@@ -1,0 +1,633 @@
+import './fonts.css';
+import './styles.css';
+import {
+  PAPERS, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
+  status, shelfOrder, stats, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
+} from './logic.js';
+import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
+import * as audio from './audio.js';
+import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminder, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
+import { drawShare, ensureFonts, toBlob } from './share.js';
+
+const KEY = 'rivblock_v1';
+const PAYWALL = false; // slås på när köp i App Store är kopplat
+const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let state = migrate(null);
+let current = null; // id för öppet block
+let usingKeyboard = false;
+window.addEventListener('keydown', (e) => { if (e.key === 'Tab' || e.key === 'Enter') usingKeyboard = true; }, true);
+window.addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
+
+/* =========================================================
+   LAGRING
+   ========================================================= */
+let saveTimer = null;
+function save(now = false) {
+  clearTimeout(saveTimer);
+  const go = () => saveRaw(KEY, JSON.stringify(state));
+  if (now) go(); else saveTimer = setTimeout(go, 150);
+}
+window.addEventListener('pagehide', () => save(true));
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
+
+function daysAgo(n, h = 19) { const d = new Date(); d.setDate(d.getDate() - n); d.setHours(h, 12, 0, 0); return d.toISOString(); }
+
+function seedBlocks() {
+  const sv = getLang() === 'sv';
+  const intro = makeBlock({ title: t('introTitle'), total: 5, pace: 'free', paper: 'smor' });
+  intro.intro = true; intro.texts = t('introTexts');
+  const ex1 = makeBlock({ title: sv ? 'Dagar utan godis' : 'Days without candy', total: 21, pace: 'daily', paper: 'mint' });
+  ex1.example = true; ex1.createdAt = daysAgo(8);
+  const n1 = sv ? ['Svårt efter middagen', '', '', 'Frukt i stället', '', '', '', 'Lättare nu'] : ['Hard after dinner', '', '', 'Fruit instead', '', '', '', 'Easier now'];
+  ex1.torn = n1.map((note, i) => ({ n: i + 1, at: daysAgo(8 - i), note }));
+  const ex2 = makeBlock({ title: sv ? 'Böcker i höst' : 'Autumn books', total: 5, pace: 'free', paper: 'himmel' });
+  ex2.example = true; ex2.createdAt = daysAgo(80);
+  const n2 = sv ? ['Tove Jansson', '', 'Lånad av mamma', '', 'Bäst hittills'] : ['Tove Jansson', '', "Borrowed from mum", '', 'Best so far'];
+  ex2.torn = n2.map((note, i) => ({ n: i + 1, at: daysAgo(70 - i * 14), note }));
+  return [intro, ex1, ex2];
+}
+
+/* =========================================================
+   HJÄLPARE
+   ========================================================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const getBlock = (id) => state.blocks.find((b) => b.id === id);
+const shelfView = $('#shelfView'), padView = $('#padView'), overlay = $('#overlay'), live = $('#live');
+
+function announce(msg) { live.textContent = ''; setTimeout(() => { live.textContent = msg; }, 30); }
+
+let toastTimer = null;
+function toast(msg, actionLabel, action) {
+  let el = $('.toast');
+  if (!el) { el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+  el.innerHTML = `<span>${esc(msg)}</span>${actionLabel ? `<button type="button">${esc(actionLabel)}</button>` : ''}`;
+  if (actionLabel) el.querySelector('button').onclick = () => { el.classList.remove('show'); action(); };
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), actionLabel ? 4500 : 2600);
+}
+
+const I = {
+  plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>',
+  soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m23 9-6 6M17 9l6 6"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
+};
+
+/* =========================================================
+   HYLLAN
+   ========================================================= */
+function chipFor(b) {
+  const s = status(b);
+  if (s === 'waiting') return `<span class="chip go">${t('chipWaiting')}</span>`;
+  if (s === 'rested') return `<span class="chip ok">${t('chipRested')}</span>`;
+  if (s === 'free') return `<span class="chip">${t('chipFree')}</span>`;
+  return '';
+}
+const tag = (b) => (b.example ? `<span class="ex-tag">${t('example')}</span>` : '');
+
+function renderShelf() {
+  const { active, done } = shelfOrder(state.blocks);
+  let h = `<header class="topbar"><div class="wordmark" aria-label="Rivblock"><i></i>Rivblock</div>
+    <div class="row"><button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
+    <button class="pill-btn" type="button" id="newBtn">${I.plus}${t('newBlock')}</button></div></header>
+    <div class="shelf-scroll"><p class="shelf-intro">${t('intro')}</p>`;
+  if (!active.length) {
+    h += `<div class="empty"><div>${t('emptyShelf')}</div><button class="pill-btn accent" type="button" data-new>${t('startBlock')}</button></div>`;
+  } else {
+    h += '<div class="cards">' + active.map((b) => {
+      const left = remaining(b), pct = Math.round((b.torn.length / b.total) * 100);
+      let sheets = '';
+      for (let i = Math.min(3, left - 1); i >= 1; i--) sheets += `<div class="sheet" style="transform:translate(${i * 2}px,${i * 3}px);opacity:${1 - i * 0.22}"></div>`;
+      return `<button class="pad-card" type="button" data-open="${b.id}">
+        <div class="mini" data-paper="${b.paper}">${sheets}<div class="face"><div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
+        <div style="min-width:0"><h3>${esc(b.title)}${tag(b)}</h3>
+        <div class="meta">${t('tornOf', b.torn.length, b.total)} · ${b.pace === 'daily' ? t('daily') : t('free')}</div>
+        <div class="progress"><span style="width:${pct}%"></span></div>
+        <div class="chips">${chipFor(b)}</div></div></button>`;
+    }).join('') + '</div>';
+  }
+  if (done.length) {
+    h += `<div class="shelf-head"><span class="label">${t('emptyBlocks')}</span><span class="label">${done.length}</span></div>`;
+    h += '<div class="done-grid">' + done.map((b) => `<button class="done-card" type="button" data-open="${b.id}">
+      <div class="tag" data-paper="${b.paper}"><b>${b.total} / ${b.total}</b></div>
+      <div><h4>${esc(b.title)}</h4><div class="meta">${t('finished', fmtDate(lastTorn(b).at, true))}${b.example ? ' · ' + t('example').toLowerCase() : ''}</div></div></button>`).join('') + '</div>';
+  }
+  h += '</div>';
+  shelfView.innerHTML = h;
+}
+
+shelfView.addEventListener('click', (e) => {
+  const o = e.target.closest('[data-open]');
+  if (o) return openPad(o.dataset.open);
+  if (e.target.closest('#newBtn,[data-new]')) return openCreate();
+  if (e.target.closest('#setBtn')) return openSettings();
+});
+
+function showShelf() {
+  current = null;
+  renderShelf();
+  padView.hidden = true; shelfView.hidden = false;
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+}
+
+/* =========================================================
+   BLOCKVYN
+   ========================================================= */
+function ticketHTML(b, n, kind, locked) {
+  const dateLbl = kind === 'active' && !locked ? `${t('today')} ${fmtDate()}` : locked ? t('tomorrow') : t('next');
+  const lead = b.intro && b.texts && b.texts[n - 1] ? `<div class="t-lead">${esc(b.texts[n - 1])}</div>` : '';
+  const note = kind === 'active' && !b.intro
+    ? `<div class="t-note"><label for="noteIn">${t('note')}</label><input id="noteIn" type="text" maxlength="60" autocomplete="off" enterkeyhint="done" placeholder="${t('notePh')}"${locked ? ' disabled' : ''} value="${esc(locked ? '' : b.draft || '')}"></div>`
+    : '<div class="t-note"></div>';
+  return `<div class="stub"><span>${esc(b.title)}</span><span>${b.round > 1 ? t('round', b.round) + ' · ' : ''}RB-${b.id}</span></div>
+    <div class="perf"><i class="dots"></i><i class="gap"></i><i class="notch l"></i><i class="notch r"></i></div>
+    <div class="tbody">
+      ${locked ? `<div class="big-stamp">${t('stampTomorrow')}<small>${t('stampTomorrowSub')}</small></div>` : ''}
+      <div class="t-row"><span>${t('ticketNo')}</span><span>${dateLbl}</span></div>
+      <div class="bignum">${pad2(n)}<small>/${pad2(b.total)}</small></div>
+      <div class="t-title">${esc(b.title)}</div>${lead}
+      ${note}
+      <div class="t-foot"><div><div class="barcode"></div><div class="serial">RB-${b.id}-${pad2(n)}</div></div><div class="stamp">${t('tearOff')}</div></div>
+    </div>`;
+}
+
+function openPad(id, entering = false) {
+  current = id;
+  shelfView.hidden = true; padView.hidden = false;
+  renderPad(entering);
+  if (usingKeyboard) $('#backBtn')?.focus({ preventScroll: true });
+}
+
+function statusLine(b) {
+  if (isDone(b)) return '';
+  if (lockedToday(b)) return t('statusRested');
+  if (!state.settings.hintSeen || b.intro && b.torn.length === 0) return `<span class="hint">${t('hint')} ${I.arrow}</span>`;
+  const l = lastTorn(b);
+  if (b.pace === 'daily') return l ? t('statusDaily', fmtDateLower(l.at)) : t('statusDailyFirst');
+  return l ? t('statusFree', fmtDateLower(l.at)) : t('statusFreeFirst');
+}
+
+function doneHTML(b) {
+  if (!isDone(b)) return '';
+  const first = b.torn[0], last = lastTorn(b);
+  const span = dayKey(first.at) === dayKey(last.at) ? fmtDate(last.at, true) : `${fmtDate(first.at)} – ${fmtDate(last.at, true)}`;
+  const st = stats(b), notes = b.torn.filter((x) => x.note);
+  const actions = b.intro
+    ? `<button class="pill-btn accent" type="button" id="firstBtn">${t('startBlock')}</button>
+       <div class="row"><button class="link-btn" type="button" id="toShelfBtn">${t('toShelf')}</button></div>`
+    : `<button class="pill-btn" type="button" id="shareBtn">${t('share')}</button>
+       <div class="row"><button class="link-btn" type="button" id="againBtn">${t('again')}</button><button class="link-btn" type="button" id="toShelfBtn">${t('toShelf')}</button></div>`;
+  return `<div class="done" data-paper="${b.paper}">
+    <div class="d-head"><div class="d-stamp">${t('emptyStamp')}</div><h3>${esc(b.title)}</h3>
+      <div class="d-meta">${t('doneMeta', b.total, span)}</div><div class="d-meta">${t('doneStats', st.days, st.activeDays)}</div></div>
+    <div class="stubs">${b.torn.map((x) => `<div class="s${x.note ? ' noted' : ''}"><b>${pad2(x.n)}</b><span>${fmtDate(x.at)}</span></div>`).join('')}</div>
+    ${notes.length ? `<div class="notes">${notes.map((x) => `<div><b>${pad2(x.n)}</b><span>${esc(x.note)}</span></div>`).join('')}</div>` : ''}
+    <div class="d-actions">${actions}</div></div>`;
+}
+
+function renderPad(entering) {
+  const b = getBlock(current);
+  if (!b) return showShelf();
+  const left = remaining(b), done = isDone(b), locked = lockedToday(b), n = b.torn.length + 1;
+  let h = `<header class="topbar pad-top"><button class="icon-btn" type="button" id="backBtn" aria-label="${t('toShelf')}">${I.back}</button>
+    <h2>${esc(b.title)}</h2><div class="row">
+    <button class="icon-btn" type="button" id="soundBtn" aria-label="${state.settings.sound ? t('soundOff') : t('soundOn')}">${state.settings.sound ? I.soundOn : I.soundOff}</button>
+    <button class="icon-btn" type="button" id="moreBtn" aria-label="${t('more')}">${I.more}</button></div></header>
+    <div class="pad-main"><div class="stage" id="stage" data-paper="${b.paper}">
+    <div class="board"><div class="binding"><span>${done ? t('bindingDone') : t('bindingLeft', left)}</span></div>${doneHTML(b)}</div>`;
+  if (!done) {
+    for (let i = Math.min(4, left - 1); i >= 1; i--) h += `<div class="stack-sheet" style="transform:translateY(${i * 2.6}px);left:${i * 1.2}px;right:${i * 1.2}px;z-index:${10 - i}"></div>`;
+    if (left > 1 && !locked) h += `<div class="ticket preview" aria-hidden="true">${ticketHTML(b, n + 1, 'preview')}</div>`;
+    h += `<div class="ticket active${locked ? ' locked' : ''}${entering ? ' entering' : ''}" id="active" tabindex="0" role="button" aria-label="${esc(t('tearLabel', n, b.total))}"${locked ? ' aria-disabled="true"' : ''}>${ticketHTML(b, n, 'active', locked)}</div>`;
+  }
+  h += `</div><div class="pad-status" id="padStatus">${statusLine(b)}</div></div>`;
+  padView.innerHTML = h;
+  if (done) requestAnimationFrame(() => $('.done', padView)?.classList.add('show'));
+  bindPad(b);
+}
+
+function bindPad(b) {
+  $('#backBtn').onclick = showShelf;
+  $('#soundBtn').onclick = () => {
+    state.settings.sound = !state.settings.sound; audio.setSound(state.settings.sound); save();
+    if (state.settings.sound) { audio.unlock(); audio.rip(b.paper, 0.7, 0.5); }
+    renderPad(false); $('#soundBtn').focus();
+  };
+  $('#moreBtn').onclick = () => openMenu(b);
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  on('shareBtn', () => shareBlock(b));
+  on('againBtn', () => { restart(b); save(); audio.unlock(); audio.settle(); renderPad(true); });
+  on('toShelfBtn', showShelf);
+  on('firstBtn', () => { showShelf(); openCreate(); });
+  const note = $('#noteIn');
+  if (note) {
+    note.addEventListener('input', () => { b.draft = note.value; save(); });
+    note.addEventListener('keydown', (e) => { if (e.key === 'Enter') note.blur(); });
+  }
+  const act = $('#active');
+  if (act) {
+    act.addEventListener('pointerdown', onDown);
+    act.addEventListener('pointermove', onMove);
+    act.addEventListener('pointerup', onUp);
+    act.addEventListener('pointercancel', onUp);
+    act.addEventListener('keydown', (e) => {
+      if (e.target !== act) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); autoTear(); }
+    });
+  }
+}
+
+/* =========================================================
+   RIV-FYSIK
+   ========================================================= */
+const THRESHOLD = 0.8;
+const drag = { on: false, id: null, x0: 0, y0: 0, lx: 0, lt: 0, dir: 'ltr', locked: false, prog: 0, step: 0, busy: false };
+
+function parts() {
+  const a = $('#active');
+  return a ? { a, body: $('.tbody', a), gap: $('.gap', a), stamp: $('.stamp', a) } : null;
+}
+
+function refuse() {
+  const E = parts(); if (!E) return;
+  E.a.classList.remove('shake'); void E.a.offsetWidth; E.a.classList.add('shake');
+  haptic.nope();
+}
+
+function onDown(e) {
+  const b = getBlock(current);
+  if (!b || drag.busy || isDone(b)) return;
+  if (e.target.closest('input')) return;
+  audio.unlock();
+  if (!canTear(b)) return refuse();
+  if (document.activeElement?.id === 'noteIn') document.activeElement.blur();
+  const E = parts(), r = E.a.getBoundingClientRect();
+  Object.assign(drag, { on: true, id: e.pointerId, x0: e.clientX, lx: e.clientX, y0: e.clientY, lt: performance.now(), prog: 0, step: 0, locked: false });
+  drag.dir = (e.clientX - r.left) / r.width > 0.55 ? 'rtl' : 'ltr';
+  haptic.start();
+  try { E.a.setPointerCapture(e.pointerId); } catch { /* */ }
+}
+
+function applyTear(E, p, dir, dy) {
+  const c = Math.max(0, Math.min(1, p)), s = dir === 'ltr' ? 1 : -1;
+  E.body.style.transformOrigin = dir === 'ltr' ? '96% 0%' : '4% 0%';
+  E.body.style.transition = 'none';
+  E.body.classList.toggle('tearing', c > 0.03);
+  const tilt = -s * (c * 14.5 + Math.max(0, dy * 0.03));
+  const y = c * 24 + Math.max(0, Math.min(36, dy * 0.3)), x = s * c * 12;
+  E.body.style.transform = `translate3d(${x}px,${y}px,0) rotate(${tilt}deg)`;
+  E.gap.style.transition = 'none';
+  E.gap.style.opacity = c > 0.02 ? '1' : '0';
+  E.gap.style.width = Math.min(94, c * 96) + '%';
+  E.gap.style.left = dir === 'ltr' ? '10px' : 'auto';
+  E.gap.style.right = dir === 'ltr' ? 'auto' : '10px';
+  E.stamp.style.opacity = String(0.4 + c * 0.55);
+  E.stamp.textContent = c > 0.6 ? t('doneStamp') : t('tearOff');
+}
+
+function onMove(e) {
+  if (!drag.on || e.pointerId !== drag.id || drag.busy) return;
+  const E = parts(); if (!E) return;
+  const r = E.a.getBoundingClientRect(), dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+  if (!drag.locked && Math.abs(dx) > 8) { drag.dir = dx >= 0 ? 'ltr' : 'rtl'; drag.locked = true; }
+  const sdx = drag.dir === 'ltr' ? dx : -dx, span = r.width * 0.8;
+  const p = Math.max(0, Math.min(1, Math.max(0, sdx / span) + (dy > 16 && sdx > 10 ? (dy * 0.22) / span : 0)));
+  const now = performance.now(), vel = Math.abs(e.clientX - drag.lx) / Math.max(8, now - drag.lt);
+  drag.lx = e.clientX; drag.lt = now;
+  const b = getBlock(current);
+  if (p > drag.step + 0.04) { drag.step = p; audio.rip(b.paper, Math.min(2.2, vel), p); haptic.tick(); }
+  drag.prog = p;
+  applyTear(E, p, drag.dir, dy);
+  if (p >= THRESHOLD) completeTear(vel);
+}
+
+function springBack(E) {
+  E.body.style.transition = 'transform .42s cubic-bezier(.22,1.25,.36,1)';
+  E.body.style.transform = ''; E.body.classList.remove('tearing');
+  E.gap.style.transition = 'width .3s ease, opacity .25s ease'; E.gap.style.width = '0'; E.gap.style.opacity = '0';
+  E.stamp.style.opacity = '.4'; E.stamp.textContent = t('tearOff');
+}
+
+function onUp(e) {
+  if (!drag.on || e.pointerId !== drag.id) return;
+  drag.on = false;
+  const E = parts(); if (!E) return;
+  try { E.a.releasePointerCapture(e.pointerId); } catch { /* */ }
+  if (drag.busy) return;
+  haptic.end();
+  if (drag.prog > 0.06) audio.settle();
+  springBack(E);
+}
+
+/** Tangentbord/skärmläsare: animera rivningen automatiskt */
+function autoTear() {
+  const b = getBlock(current);
+  if (!b || drag.busy || isDone(b)) return;
+  audio.unlock();
+  if (!canTear(b)) return refuse();
+  const E = parts(); drag.dir = 'ltr';
+  if (reduceMotion()) return completeTear(0.8);
+  drag.busy = true;
+  const t0 = performance.now(), D = 420;
+  let step = 0;
+  const frame = (now) => {
+    const p = Math.min(1, (now - t0) / D) * THRESHOLD;
+    if (p > step + 0.06) { step = p; audio.rip(b.paper, 0.9, p); haptic.tick(); }
+    applyTear(E, p, 'ltr', 0);
+    if (p < THRESHOLD) requestAnimationFrame(frame); else { drag.busy = false; completeTear(1); }
+  };
+  requestAnimationFrame(frame);
+}
+
+function completeTear(vel) {
+  if (drag.busy) return;
+  const b = getBlock(current), E = parts(), stage = $('#stage');
+  const note = (b.draft || '').trim();
+  if (!tear(b, note)) return;
+  drag.busy = true; drag.on = false;
+  audio.snap(b.paper); haptic.snap();
+
+  const r = E.body.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  const ghost = E.body.cloneNode(true);
+  ghost.classList.add('falling');
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.style.cssText += `;left:${r.left - sr.left}px;top:${r.top - sr.top}px;width:${E.body.offsetWidth}px;height:${E.body.offsetHeight}px;`;
+  const gi = ghost.querySelector('input'); if (gi) { gi.removeAttribute('id'); gi.value = note; }
+  const gs = ghost.querySelector('.stamp'); if (gs) { gs.textContent = t('doneStamp'); gs.style.opacity = '.95'; }
+
+  state.settings.hintSeen = true;
+  const finished = isDone(b), n = b.torn.length;
+  save(true);
+  renderPad(true);
+  $('#stage').appendChild(ghost);
+  if (usingKeyboard) $('#active')?.focus({ preventScroll: true });
+  announce(t('tornAnnounce', n, remaining(b)));
+
+  if (finished) { audio.chime(); setTimeout(() => haptic.success(), 250); }
+  else if (lockedToday(b)) { setTimeout(() => { audio.thud(); haptic.snap(); }, 380); }
+  if (!b.intro) toast(t('tornAnnounce', n, remaining(b)), t('undo').split(' ')[0], () => doUndo(b));
+
+  if (reduceMotion()) { ghost.remove(); drag.busy = false; return; }
+  const s = drag.dir === 'ltr' ? 1 : -1;
+  const fx = s * (90 + Math.min(125, vel * 75)), rot = s * (26 + Math.random() * 14);
+  requestAnimationFrame(() => {
+    ghost.style.transition = 'transform .7s cubic-bezier(.32,.02,.72,.25), opacity .64s ease-in';
+    ghost.style.transform = `translate3d(${fx}px,520px,0) rotate(${rot}deg)`;
+    ghost.style.opacity = '0';
+  });
+  setTimeout(() => { ghost.remove(); drag.busy = false; }, 720);
+}
+
+function doUndo(b) {
+  if (!undo(b)) return;
+  save(); audio.unlock(); audio.settle();
+  if (current === b.id) renderPad(true); else renderShelf();
+  toast(t('undone'));
+}
+
+/* =========================================================
+   SHEETS
+   ========================================================= */
+let lastFocus = null;
+function closeSheet() {
+  overlay.innerHTML = '';
+  if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
+}
+function openSheet(html, onReady, label) {
+  lastFocus = document.activeElement;
+  overlay.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label || '')}"><div class="grabber"></div>${html}</div></div>`;
+  $('#scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim') closeSheet(); });
+  const sh = $('.sheet', overlay);
+  if (onReady) onReady(sh);
+  const f = sh.querySelector('input:not([type=hidden]),button:not(.grabber)');
+  if (f && !('ontouchstart' in window)) f.focus({ preventScroll: true });
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && overlay.innerHTML) closeSheet();
+  if (e.key === 'Tab' && overlay.innerHTML) { // håll fokus i sheeten
+    const items = [...overlay.querySelectorAll('button,input,textarea,select')].filter((x) => !x.disabled);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
+function blockForm(b) {
+  const counts = [5, 10, 21, 30, 50];
+  return `<div class="field"><label class="label" for="cTitle">${t('whatTitle')}</label>
+      <input class="text-in" id="cTitle" maxlength="40" placeholder="${t('titlePh')}" autocomplete="off" enterkeyhint="done" value="${b ? esc(b.title) : ''}">
+      ${b ? '' : `<div class="seg sug">${t('suggestions').map((s) => `<button type="button" data-sug="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}</div>
+    <div class="field"><span class="label" id="cCountLbl">${t('count')}</span><div class="seg" role="group" aria-labelledby="cCountLbl">
+      ${counts.map((n) => `<button type="button" data-n="${n}">${n}</button>`).join('')}
+      <input class="count-in" id="cCountIn" type="number" min="1" max="100" inputmode="numeric" placeholder="${t('countOwn')}" aria-label="${t('countOwn')}"></div>
+      ${b && b.torn.length ? `<span class="fine">${t('countMin', b.torn.length)}</span>` : ''}</div>
+    <div class="field"><span class="label">${t('pace')}</span><div class="pace">
+      <button type="button" data-pace="daily"><b>${t('paceDaily')}</b><span>${t('paceDailySub')}</span></button>
+      <button type="button" data-pace="free"><b>${t('paceFree')}</b><span>${t('paceFreeSub')}</span></button></div></div>
+    <div class="field"><span class="label">${t('paper')}</span><div class="swatches">
+      ${PAPERS.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`;
+}
+
+function wireForm(sh, f, onSubmit, minCount = 1) {
+  const ti = $('#cTitle', sh), ci = $('#cCountIn', sh);
+  const preset = [5, 10, 21, 30, 50];
+  function sync() {
+    sh.querySelectorAll('[data-n]').forEach((x) => { x.setAttribute('aria-pressed', String(+x.dataset.n === f.total)); x.disabled = +x.dataset.n < minCount; });
+    sh.querySelectorAll('[data-pace]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.pace === f.pace)));
+    sh.querySelectorAll('[data-p]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.p === f.paper)));
+    if (document.activeElement !== ci) ci.value = preset.includes(f.total) ? '' : f.total;
+  }
+  sync();
+  sh.addEventListener('click', (e) => {
+    let x;
+    if ((x = e.target.closest('[data-sug]'))) { ti.value = x.dataset.sug; ti.dispatchEvent(new Event('input')); }
+    else if ((x = e.target.closest('[data-n]'))) { f.total = +x.dataset.n; sync(); }
+    else if ((x = e.target.closest('[data-pace]'))) { f.pace = x.dataset.pace; sync(); }
+    else if ((x = e.target.closest('[data-p]'))) {
+      if (paperLocked(x.dataset.p, state, PAYWALL)) return openPro(t('proPaper'));
+      f.paper = x.dataset.p; sync();
+    }
+  });
+  ci.addEventListener('input', () => { const v = parseInt(ci.value, 10); if (v >= 1) { f.total = Math.max(minCount, Math.min(100, v)); sync(); } });
+  ci.addEventListener('blur', () => { ci.value = preset.includes(f.total) ? '' : f.total; });
+  ti.addEventListener('keydown', (e) => { if (e.key === 'Enter') ti.blur(); });
+  $('#cGo', sh).onclick = () => {
+    const title = ti.value.trim();
+    if (!title) { ti.focus(); ti.placeholder = t('titleMissing'); haptic.nope(); return; }
+    onSubmit(title);
+  };
+}
+
+function openCreate() {
+  if (!canCreate(state, PAYWALL)) return openPro(t('proLimit'));
+  const f = { total: 21, pace: 'daily', paper: 'rosa' };
+  openSheet(`<h2>${t('newBlock')}</h2>${blockForm(null)}<button class="pill-btn accent big" type="button" id="cGo">${t('create')}</button>`, (sh) => {
+    wireForm(sh, f, (title) => {
+      const b = makeBlock({ title, ...f });
+      state.blocks.unshift(b); save(true); closeSheet();
+      audio.unlock(); audio.settle(); haptic.snap();
+      openPad(b.id, true);
+    });
+  }, t('newBlock'));
+}
+
+function openEdit(b) {
+  const f = { total: b.total, pace: b.pace, paper: b.paper };
+  openSheet(`<h2>${t('edit')}</h2>${blockForm(b)}<button class="pill-btn accent big" type="button" id="cGo">${t('saveChanges')}</button>`, (sh) => {
+    wireForm(sh, f, (title) => {
+      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; setTotal(b, f.total);
+      delete b.example;
+      save(true); closeSheet(); renderPad(false);
+    }, Math.max(1, b.torn.length));
+  }, t('edit'));
+}
+
+function openMenu(b) {
+  openSheet(`<h2>${esc(b.title)}</h2><div class="menu">
+      ${b.intro ? '' : `<button type="button" id="mEdit">${t('edit')}</button>`}
+      ${b.torn.length && !b.intro ? `<button type="button" id="mUndo">${t('undo')}</button>` : ''}
+      ${b.torn.length && !b.intro ? `<button type="button" id="mShare">${t('shareBlock')}</button>` : ''}
+      <button type="button" id="mReset">${t('restart')}</button>
+      <button type="button" class="danger" id="mDel">${t('remove')}</button>
+      <button type="button" id="mCancel">${t('cancel')}</button></div>`, (sh) => {
+    const arm = (btn, text, act) => { if (btn.dataset.armed) return act(); btn.dataset.armed = '1'; btn.textContent = text; btn.style.borderColor = 'currentColor'; haptic.nope(); };
+    const on = (id, fn) => { const el = $(id, sh); if (el) el.onclick = fn; };
+    on('#mEdit', () => { closeSheet(); openEdit(b); });
+    on('#mUndo', () => { closeSheet(); doUndo(b); });
+    on('#mShare', () => { closeSheet(); shareBlock(b); });
+    on('#mReset', function () { arm(this, t('restartConfirm'), () => { restart(b); save(true); closeSheet(); renderPad(true); }); });
+    on('#mDel', function () {
+      arm(this, t('removeConfirm'), () => {
+        const idx = state.blocks.indexOf(b);
+        state.blocks.splice(idx, 1); save(true); closeSheet(); showShelf();
+        toast(t('removed'), t('undo').split(' ')[0], () => { state.blocks.splice(idx, 0, b); save(true); renderShelf(); });
+      });
+    });
+    on('#mCancel', closeSheet);
+  }, b.title);
+}
+
+async function shareBlock(b) {
+  await ensureFonts();
+  const blob = await toBlob(drawShare(b));
+  const res = await shareImage(blob, t('shareTitle', b.title));
+  if (res !== 'fallback') return;
+  const url = URL.createObjectURL(blob);
+  openSheet(`<h2>${t('yourImage')}</h2><img class="share-img" src="${url}" alt="${esc(b.title)}"><p>${t('holdToSave')}</p>
+    <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => { $('#sClose', sh).onclick = closeSheet; }, t('yourImage'));
+}
+
+/* ---------- Inställningar ---------- */
+function openSettings() {
+  const s = state.settings;
+  const hasExamples = state.blocks.some((b) => b.example || b.intro);
+  const toggle = (id, on, label) => `<button class="toggle" type="button" role="switch" id="${id}" aria-checked="${on}" aria-label="${label}"></button>`;
+  openSheet(`<h2>${t('settings')}</h2>
+    <div class="set-list">
+      <div class="set-row"><span>${t('language')}</span><div class="mini-seg" role="group" aria-label="${t('language')}">
+        <button type="button" data-lang="auto">${t('langAuto')}</button><button type="button" data-lang="sv">Svenska</button><button type="button" data-lang="en">English</button></div></div>
+      <div class="set-row"><span>${t('sound')}</span>${toggle('sSound', s.sound, t('sound'))}</div>
+      <div class="set-row"><span>${t('haptics')}</span>${toggle('sHap', s.haptics, t('haptics'))}</div>
+      <div class="set-row"><span>${t('reminder')}${remindersSupported() ? '' : `<small>${t('reminderNative')}</small>`}</span>
+        ${remindersSupported() ? `<div class="row"><input class="time-in" type="time" id="sTime" value="${s.reminder || '19:00'}" aria-label="${t('reminder')}">${toggle('sRem', !!s.reminder, t('reminder'))}</div>` : ''}</div>
+    </div>
+    <div class="field"><span class="label">${t('backup')}</span>
+      <div class="sheet-actions"><button class="pill-btn ghost" type="button" id="sExport">${t('backupExport')}</button><button class="pill-btn ghost" type="button" id="sImport">${t('backupImport')}</button></div>
+      <div id="sImportBox" hidden><textarea id="sImportTxt" aria-label="${t('backupPaste')}" placeholder="${t('backupPaste')}"></textarea>
+        <p class="fine">${t('backupReplace')}</p><button class="pill-btn" type="button" id="sImportGo">${t('backupLoad')}</button></div></div>
+    ${hasExamples ? `<button class="pill-btn ghost" type="button" id="sEx">${t('removeExamples')}</button>` : ''}
+    ${PAYWALL && !s.pro ? `<button class="pill-btn accent" type="button" id="sPro">${t('proTitle')}</button>` : ''}
+    <div class="field"><span class="label">${t('about')}</span><p class="fine">${t('aboutText')}</p><p class="fine">${t('version')} ${VERSION}</p></div>
+    <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => {
+    const syncLang = () => sh.querySelectorAll('[data-lang]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.lang === s.lang)));
+    syncLang();
+    sh.querySelectorAll('[data-lang]').forEach((x) => x.onclick = () => { s.lang = x.dataset.lang; setLang(s.lang); save(); closeSheet(); rerender(); openSettings(); });
+    const flip = (el, key, after) => { el.onclick = () => { s[key] = !s[key]; el.setAttribute('aria-checked', String(s[key])); save(); after && after(); }; };
+    flip($('#sSound', sh), 'sound', () => { audio.setSound(s.sound); if (s.sound) { audio.unlock(); audio.settle(); } });
+    flip($('#sHap', sh), 'haptics', () => { setHaptics(s.haptics); haptic.tick(); });
+    const rem = $('#sRem', sh), time = $('#sTime', sh);
+    if (rem) {
+      const apply = async () => {
+        const ok = await scheduleReminder(s.reminder, t('reminderTitle'), t('reminderText'));
+        if (!ok && s.reminder) { s.reminder = null; rem.setAttribute('aria-checked', 'false'); }
+        save();
+      };
+      rem.onclick = () => { s.reminder = s.reminder ? null : time.value || '19:00'; rem.setAttribute('aria-checked', String(!!s.reminder)); apply(); };
+      time.onchange = () => { if (s.reminder) { s.reminder = time.value; apply(); } };
+    }
+    $('#sExport', sh).onclick = async () => {
+      const text = exportBackup(state), name = `rivblock-${dayKey()}.json`;
+      const r = await saveTextFile(name, text);
+      if (r === 'shared' || r === 'downloaded') return toast(t('backupSaved'));
+      try { await navigator.clipboard.writeText(text); toast(t('backupCopied')); } catch { $('#sImportBox', sh).hidden = false; $('#sImportTxt', sh).value = text; $('#sImportTxt', sh).select(); }
+    };
+    $('#sImport', sh).onclick = () => { $('#sImportBox', sh).hidden = false; $('#sImportTxt', sh).focus(); };
+    $('#sImportGo', sh).onclick = () => {
+      try {
+        const next = importBackup($('#sImportTxt', sh).value);
+        state = next; applySettings(); save(true); closeSheet(); showShelf();
+        toast(t('backupLoaded', state.blocks.length));
+      } catch { toast(t('backupBad')); haptic.nope(); }
+    };
+    const ex = $('#sEx', sh);
+    if (ex) ex.onclick = () => { state.blocks = state.blocks.filter((b) => !b.example && !b.intro); save(true); closeSheet(); showShelf(); toast(t('examplesRemoved')); };
+    const pro = $('#sPro', sh); if (pro) pro.onclick = () => openPro();
+    $('#sClose', sh).onclick = closeSheet;
+  }, t('settings'));
+}
+
+/* ---------- Rivblock Hela (engångsköp) ---------- */
+function openPro(reason) {
+  openSheet(`<div class="pro-hero">${['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'].map((p, i) => `<i data-paper="${p}" style="--r:${(i - 2.5) * 4}deg"></i>`).join('')}</div>
+    <h2>${t('proTitle')}</h2>${reason ? `<p>${esc(reason)}</p>` : ''}<p>${t('proText')}</p>
+    <button class="pill-btn accent big" type="button" id="pBuy">${t('proBuy', PRICE_LABEL)}</button>
+    <button class="link-btn" type="button" id="pRestore">${t('proRestore')}</button>
+    <button class="pill-btn ghost big" type="button" id="pClose">${t('close')}</button>`, (sh) => {
+    const done = (r) => { if (r === 'ok') { state.settings.pro = true; save(true); closeSheet(); toast(t('proThanks')); haptic.success(); } };
+    $('#pBuy', sh).onclick = async () => done(await buyPro());
+    $('#pRestore', sh).onclick = async () => done(await restorePro());
+    $('#pClose', sh).onclick = closeSheet;
+  }, t('proTitle'));
+}
+
+/* =========================================================
+   START
+   ========================================================= */
+function applySettings() {
+  setLang(state.settings.lang);
+  audio.setSound(state.settings.sound);
+  setHaptics(state.settings.haptics);
+}
+function rerender() { if (current && getBlock(current)) renderPad(false); else renderShelf(); }
+
+// Ny dag medan appen är öppen → lås upp dagens lapp
+let today = dayKey();
+function checkDay() { if (dayKey() !== today) { today = dayKey(); if (!drag.on && !drag.busy) rerender(); } }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDay(); });
+setInterval(checkDay, 60000);
+
+async function boot() {
+  const raw = await loadRaw(KEY);
+  let parsed = null;
+  try { parsed = raw ? JSON.parse(raw) : null; } catch { parsed = null; }
+  state = migrate(parsed);
+  applySettings();
+  const first = !parsed;
+  if (first) { state.blocks = seedBlocks(); save(true); }
+  showShelf();
+  setupNativeChrome();
+  if (first) { const intro = state.blocks.find((b) => b.intro); if (intro) openPad(intro.id); }
+  if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+boot();
