@@ -98,6 +98,9 @@ export async function saveTextFile(name, text) {
     }
     const file = new File([text], name, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return 'shared'; }
+    // Inbäddad (t.ex. förhandsvisning) blockerar nedladdningar tyst – låt anroparen visa texten i stället
+    let framed = true; try { framed = window.self !== window.top; } catch { framed = true; }
+    if (framed) return 'failed';
     const a = document.createElement('a');
     a.href = URL.createObjectURL(file); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();

@@ -205,6 +205,30 @@ await test('trasig lagring kraschar inte appen', async () => {
   await ctx.close();
 });
 
+await test('webbläsarens bakåt: stänger blocket, och mall fyller i antal och tempo', async () => {
+  const { ctx, page } = await fresh();
+  await page.goBack();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#padView').isHidden(), true);
+  await page.click('.pad-card >> nth=0');
+  await page.click('#backBtn');
+  await page.waitForTimeout(150);
+  await page.click('#newBtn');
+  await page.waitForTimeout(150);
+  await page.click('[data-sug="1"]');
+  assert.equal(await page.inputValue('#cTitle'), 'Dagar utan socker');
+  assert.equal(await page.getAttribute('[data-n="21"]', 'aria-pressed'), 'true');
+  assert.equal(await page.getAttribute('[data-pace="daily"]', 'aria-pressed'), 'true');
+  assert.equal(await page.getAttribute('[data-p="mint"]', 'aria-pressed'), 'true');
+  await page.click('#cGo');
+  await page.waitForSelector('#active');
+  await page.goBack();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#padView').isHidden(), true);
+  assert.equal(await page.locator('#scrim').count(), 0);
+  await ctx.close();
+});
+
 await test('inga fel i konsolen', async () => {
   assert.deepEqual(errors, []);
 });

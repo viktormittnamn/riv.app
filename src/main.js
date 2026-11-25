@@ -131,12 +131,18 @@ shelfView.addEventListener('click', (e) => {
   if (e.target.closest('#setBtn')) return openSettings();
 });
 
-function showShelf() {
+let ignorePop = false;
+function showShelf(fromPop = false) {
+  if (fromPop !== true && history.state && history.state.rb === 'pad') { ignorePop = true; try { history.back(); } catch { ignorePop = false; } }
   current = null;
   renderShelf();
   padView.hidden = true; shelfView.hidden = false;
-  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 }
+window.addEventListener('popstate', () => {
+  if (ignorePop) { ignorePop = false; return; }
+  if (overlay.innerHTML) { closeSheet(); if (current) try { history.pushState({ rb: 'pad' }, ''); } catch { /* */ } return; }
+  if (current) showShelf(true);
+});
 
 /* =========================================================
    BLOCKVYN
@@ -160,6 +166,7 @@ function ticketHTML(b, n, kind, locked) {
 }
 
 function openPad(id, entering = false) {
+  if (!current) { try { history.pushState({ rb: 'pad' }, ''); } catch { /* */ } }
   current = id;
   shelfView.hidden = true; padView.hidden = false;
   renderPad(entering);
@@ -215,7 +222,7 @@ function renderPad(entering) {
 }
 
 function bindPad(b) {
-  $('#backBtn').onclick = showShelf;
+  $('#backBtn').onclick = () => showShelf();
   $('#soundBtn').onclick = () => {
     state.settings.sound = !state.settings.sound; audio.setSound(state.settings.sound); save();
     if (state.settings.sound) { audio.unlock(); audio.rip(b.paper, 0.7, 0.5); }
@@ -225,7 +232,7 @@ function bindPad(b) {
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
   on('shareBtn', () => shareBlock(b));
   on('againBtn', () => { restart(b); save(); audio.unlock(); audio.settle(); renderPad(true); });
-  on('toShelfBtn', showShelf);
+  on('toShelfBtn', () => showShelf());
   on('firstBtn', () => { showShelf(); openCreate(); });
   const note = $('#noteIn');
   if (note) {
@@ -425,7 +432,7 @@ function blockForm(b) {
   const counts = [5, 10, 21, 30, 50];
   return `<div class="field"><label class="label" for="cTitle">${t('whatTitle')}</label>
       <input class="text-in" id="cTitle" maxlength="40" placeholder="${t('titlePh')}" autocomplete="off" enterkeyhint="done" value="${b ? esc(b.title) : ''}">
-      ${b ? '' : `<div class="seg sug">${t('suggestions').map((s) => `<button type="button" data-sug="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}</div>
+      ${b ? '' : `<div class="seg sug">${t('suggestions').map(([s], i) => `<button type="button" data-sug="${i}">${esc(s)}</button>`).join('')}</div>`}</div>
     <div class="field"><span class="label" id="cCountLbl">${t('count')}</span><div class="seg" role="group" aria-labelledby="cCountLbl">
       ${counts.map((n) => `<button type="button" data-n="${n}">${n}</button>`).join('')}
       <input class="count-in" id="cCountIn" type="number" min="1" max="100" inputmode="numeric" placeholder="${t('countOwn')}" aria-label="${t('countOwn')}"></div>
@@ -449,7 +456,12 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
   sync();
   sh.addEventListener('click', (e) => {
     let x;
-    if ((x = e.target.closest('[data-sug]'))) { ti.value = x.dataset.sug; ti.dispatchEvent(new Event('input')); }
+    if ((x = e.target.closest('[data-sug]'))) {
+      const [title, n, pace, paper] = t('suggestions')[+x.dataset.sug];
+      ti.value = title; f.total = Math.max(minCount, n); f.pace = pace;
+      if (!paperLocked(paper, state, PAYWALL)) f.paper = paper;
+      sync(); haptic.tick();
+    }
     else if ((x = e.target.closest('[data-n]'))) { f.total = +x.dataset.n; sync(); }
     else if ((x = e.target.closest('[data-pace]'))) { f.pace = x.dataset.pace; sync(); }
     else if ((x = e.target.closest('[data-p]'))) {
@@ -602,6 +614,20 @@ function openPro(reason) {
 /* =========================================================
    START
    ========================================================= */
+/** Pappersbrus ritas en gång till en liten PNG (billigare än SVG-filter på varje lapp) */
+function makeNoise() {
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d'), img = x.createImageData(128, 128);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 110 + Math.random() * 145 | 0;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255;
+    }
+    x.putImageData(img, 0, 0);
+    document.documentElement.style.setProperty('--noise', `url(${c.toDataURL('image/png')})`);
+  } catch { /* SVG-reserven i CSS gäller */ }
+}
+
 function applySettings() {
   setLang(state.settings.lang);
   audio.setSound(state.settings.sound);
@@ -616,6 +642,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 setInterval(checkDay, 60000);
 
 async function boot() {
+  makeNoise();
   const raw = await loadRaw(KEY);
   let parsed = null;
   try { parsed = raw ? JSON.parse(raw) : null; } catch { parsed = null; }
@@ -625,6 +652,13 @@ async function boot() {
   if (first) { state.blocks = seedBlocks(); save(true); }
   showShelf();
   setupNativeChrome();
+  if (isNative()) {
+    import('@capacitor/app').then(({ App }) => App.addListener('backButton', () => {
+      if (overlay.innerHTML) closeSheet();
+      else if (current) showShelf();
+      else App.exitApp();
+    })).catch(() => {});
+  }
   if (first) { const intro = state.blocks.find((b) => b.intro); if (intro) openPad(intro.id); }
   if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
