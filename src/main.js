@@ -2,11 +2,11 @@ import './fonts.css';
 import './styles.css';
 import {
   PAPERS, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
-  status, shelfOrder, stats, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
+  status, shelfOrder, stats, reminderPlan, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
 import * as audio from './audio.js';
-import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminder, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
+import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
 import { drawShare, ensureFonts, toBlob } from './share.js';
 
 const KEY = 'rivblock_v1';
@@ -23,10 +23,23 @@ window.addEventListener('pointerdown', () => { usingKeyboard = false; }, true);
 /* =========================================================
    LAGRING
    ========================================================= */
+/** Lägg om påminnelserna efter varje ändring (bara i appen) */
+let remTimer = null;
+function refreshReminders(ask = false) {
+  if (!remindersSupported()) return Promise.resolve(true);
+  clearTimeout(remTimer);
+  const run = () => scheduleReminders(reminderPlan(state.blocks, state.settings.reminder).map((p) => ({
+    at: p.at, title: t('reminderTitle'), body: p.waiting > 1 ? t('reminderMany', p.waiting) : t('reminderText')
+  })), ask);
+  if (ask) return run();
+  remTimer = setTimeout(run, 800);
+  return Promise.resolve(true);
+}
+
 let saveTimer = null;
 function save(now = false) {
   clearTimeout(saveTimer);
-  const go = () => saveRaw(KEY, JSON.stringify(state));
+  const go = () => { saveRaw(KEY, JSON.stringify(state)); refreshReminders(); };
   if (now) go(); else saveTimer = setTimeout(go, 150);
 }
 window.addEventListener('pagehide', () => save(true));
@@ -569,7 +582,7 @@ function openSettings() {
     const rem = $('#sRem', sh), time = $('#sTime', sh);
     if (rem) {
       const apply = async () => {
-        const ok = await scheduleReminder(s.reminder, t('reminderTitle'), t('reminderText'));
+        const ok = await refreshReminders(true);
         if (!ok && s.reminder) { s.reminder = null; rem.setAttribute('aria-checked', 'false'); }
         save();
       };
@@ -637,7 +650,7 @@ function rerender() { if (current && getBlock(current)) renderPad(false); else r
 
 // Ny dag medan appen är öppen → lås upp dagens lapp
 let today = dayKey();
-function checkDay() { if (dayKey() !== today) { today = dayKey(); if (!drag.on && !drag.busy) rerender(); } }
+function checkDay() { if (dayKey() !== today) { today = dayKey(); refreshReminders(); if (!drag.on && !drag.busy) rerender(); } }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDay(); });
 setInterval(checkDay, 60000);
 
@@ -652,6 +665,7 @@ async function boot() {
   if (first) { state.blocks = seedBlocks(); save(true); }
   showShelf();
   setupNativeChrome();
+  refreshReminders();
   if (isNative()) {
     import('@capacitor/app').then(({ App }) => App.addListener('backButton', () => {
       if (overlay.innerHTML) closeSheet();

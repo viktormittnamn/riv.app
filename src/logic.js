@@ -168,3 +168,23 @@ export function canCreate(state, paywall) {
   return state.blocks.filter((b) => !isDone(b) && !b.example && !b.intro).length < 2;
 }
 export const paperLocked = (paper, state, paywall) => !!paywall && !state.settings.pro && !FREE_PAPERS.includes(paper);
+
+/**
+ * Datum för påminnelser kommande dagar. Hoppar över idag om klockan passerat eller om
+ * inget väntar idag. Returnerar [{ at: Date, waiting: antal block }].
+ */
+export function reminderPlan(blocks, hhmm, now = new Date(), days = 14) {
+  if (!hhmm) return [];
+  const active = blocks.filter((b) => !isDone(b) && !b.intro && !b.example);
+  if (!active.length) return [];
+  const [h, m] = hhmm.split(':').map(Number);
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const at = new Date(now); at.setDate(at.getDate() + i); at.setHours(h, m, 0, 0);
+    if (at <= now) continue;
+    // idag räknas bara block som faktiskt väntar; framtida dagar: alla dagliga + fria
+    const waiting = i === 0 ? active.filter((b) => canTear(b, now)).length : active.length;
+    if (waiting) out.push({ at, waiting });
+  }
+  return out;
+}

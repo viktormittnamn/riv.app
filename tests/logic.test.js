@@ -139,3 +139,26 @@ describe('betalvägg', () => {
     expect(paperLocked('rosa', s, true)).toBe(false);
   });
 });
+
+import { reminderPlan, makeBlock as mk, tear as tr } from '../src/logic.js';
+describe('påminnelser', () => {
+  it('hoppar över idag när dagens lapp är riven, och passerad tid', () => {
+    const now = new Date(2026, 10, 10, 12, 0);
+    const b = mk({ title: 'A', total: 5, pace: 'daily' });
+    tr(b, '', now);
+    const plan = reminderPlan([b], '19:00', now, 3);
+    expect(plan.map((p) => p.at.getDate())).toEqual([11, 12]);
+    const plan2 = reminderPlan([mk({ title: 'B', total: 5 })], '09:00', now, 2);
+    expect(plan2.map((p) => p.at.getDate())).toEqual([11]);
+  });
+  it('inga påminnelser utan aktiva egna block eller utan tid', () => {
+    const ex = mk({ title: 'E', total: 2 }); ex.example = true;
+    expect(reminderPlan([ex], '19:00')).toEqual([]);
+    expect(reminderPlan([mk({ title: 'X', total: 2 })], null)).toEqual([]);
+  });
+  it('räknar väntande block idag', () => {
+    const now = new Date(2026, 10, 10, 8, 0);
+    const plan = reminderPlan([mk({ title: 'A', total: 3 }), mk({ title: 'B', total: 3 })], '19:00', now, 1);
+    expect(plan[0].waiting).toBe(2);
+  });
+});

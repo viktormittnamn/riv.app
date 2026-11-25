@@ -114,17 +114,20 @@ export async function saveTextFile(name, text) {
 
 /* ---------- Påminnelser (bara i appen) ---------- */
 export const remindersSupported = () => isNative();
-const REMINDER_ID = 4711;
-export async function scheduleReminder(hhmm, title, body) {
+const BASE_ID = 5000, MAX = 21;
+/** Ersätter alla schemalagda påminnelser med en per angivet datum. ask=true får be om tillstånd. */
+export async function scheduleReminders(items, ask = false) {
   if (!isNative()) return false;
   try {
-    await LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
-    if (!hhmm) return true;
-    const perm = await LocalNotifications.requestPermissions();
+    const pending = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
+    const ours = pending.notifications.filter((n) => n.id >= BASE_ID && n.id < BASE_ID + 100).map((n) => ({ id: n.id }));
+    if (ours.length) await LocalNotifications.cancel({ notifications: ours });
+    if (!items.length) return true;
+    let perm = await LocalNotifications.checkPermissions();
+    if (perm.display !== 'granted' && ask) perm = await LocalNotifications.requestPermissions();
     if (perm.display !== 'granted') return false;
-    const [hour, minute] = hhmm.split(':').map(Number);
     await LocalNotifications.schedule({
-      notifications: [{ id: REMINDER_ID, title, body, schedule: { on: { hour, minute }, repeats: true, allowWhileIdle: true } }]
+      notifications: items.slice(0, MAX).map((it, i) => ({ id: BASE_ID + i, title: it.title, body: it.body, schedule: { at: it.at, allowWhileIdle: true } }))
     });
     return true;
   } catch { return false; }
