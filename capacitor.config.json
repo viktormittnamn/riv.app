@@ -1,0 +1,11 @@
+{
+  "appId": "se.rivblock.app",
+  "appName": "Rivblock",
+  "webDir": "dist",
+  "ios": { "contentInset": "never", "backgroundColor": "#e9e8ee", "scrollEnabled": false },
+  "android": { "backgroundColor": "#e9e8ee" },
+  "plugins": {
+    "SplashScreen": { "launchAutoHide": false, "backgroundColor": "#e9e8ee", "showSpinner": false },
+    "LocalNotifications": { "iconColor": "#ef4a2f" }
+  }
+}
