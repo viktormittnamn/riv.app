@@ -244,7 +244,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .pace button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
 .swatches button { display: grid; justify-items: center; gap: 4px; background: none; border: 0; padding: 0; font-size: 11px; color: var(--muted); }
-.swatches i { width: 42px; height: 42px; border-radius: 10px; background: var(--p-bg); display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); position: relative; }
+.swatches i { width: 42px; height: 42px; border-radius: 10px; background: var(--p-bg); display: block; box-shadow: inset 0 0 0 1px var(--line); position: relative; }
 .swatches i::after { content: ""; position: absolute; left: 4px; right: 4px; top: 10px; border-top: 1.5px dashed var(--p-hole); }
 .swatches button[aria-pressed="true"] i { outline: 2.5px solid var(--ink); outline-offset: 2px; }
 .swatches button[aria-pressed="true"] { color: var(--ink); }

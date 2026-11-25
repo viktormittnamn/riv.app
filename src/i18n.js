@@ -156,7 +156,7 @@ const en = {
   doneStamp: 'Done',
   stampTomorrow: 'Tomorrow',
   stampTomorrowSub: "Today's ticket is torn",
-  hint: 'Drag your finger along the perforation',
+  hint: 'Drag along the perforation',
   statusRested: 'Nice work. The next ticket opens tomorrow.',
   statusDailyFirst: 'One ticket a day. Tear the first one when you are done today.',
   statusDaily: (d) => `One ticket a day. Last torn ${d}.`,
