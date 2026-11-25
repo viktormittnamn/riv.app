@@ -188,7 +188,7 @@ function doneHTML(b) {
   return `<div class="done" data-paper="${b.paper}">
     <div class="d-head"><div class="d-stamp">${t('emptyStamp')}</div><h3>${esc(b.title)}</h3>
       <div class="d-meta">${t('doneMeta', b.total, span)}</div><div class="d-meta">${t('doneStats', st.days, st.activeDays)}</div></div>
-    <div class="stubs">${b.torn.map((x) => `<div class="s${x.note ? ' noted' : ''}"><b>${pad2(x.n)}</b><span>${fmtDate(x.at)}</span></div>`).join('')}</div>
+    <div class="stubs" style="${b.total <= 6 ? `grid-template-columns:repeat(${b.total},1fr)` : b.total <= 12 ? 'grid-template-columns:repeat(6,1fr)' : ''}">${b.torn.map((x) => `<div class="s${x.note ? ' noted' : ''}"><b>${pad2(x.n)}</b><span>${fmtDate(x.at)}</span></div>`).join('')}</div>
     ${notes.length ? `<div class="notes">${notes.map((x) => `<div><b>${pad2(x.n)}</b><span>${esc(x.note)}</span></div>`).join('')}</div>` : ''}
     <div class="d-actions">${actions}</div></div>`;
 }
