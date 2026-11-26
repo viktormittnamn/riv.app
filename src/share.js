@@ -37,7 +37,7 @@ export async function ensureFonts() {
   try { await Promise.all([document.fonts.load(`900 96px ${DISPLAY}`), document.fonts.load(`500 24px ${MONO}`)]); } catch { /* reserv */ }
 }
 
-export function drawShare(b) {
+export function drawShare(b, { notes = false } = {}) {
   const W = 1080, H = 1350;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
@@ -76,7 +76,8 @@ export function drawShare(b) {
   const gap = 12, gw = BW - 120;
   let cw = (gw - gap * (cols - 1)) / cols, ch = cw * 1.08;
   const rows = Math.ceil(b.total / cols);
-  const gy = y + 44, maxH = BY + BH - 150 - gy;
+  const quotes = notes ? b.torn.filter((x) => x.note).slice(-3).reverse() : [];
+  const gy = y + 44, maxH = BY + BH - 150 - gy - quotes.length * 58;
   if (rows * (ch + gap) - gap > maxH) ch = (maxH + gap) / rows - gap;
   const gx = BX + 60;
   for (let i = 0; i < b.total; i++) {
@@ -96,6 +97,16 @@ export function drawShare(b) {
     }
   }
 
+  // anteckningar som citat ovanför signaturen
+  x.textAlign = 'left';
+  quotes.forEach((q, i) => {
+    const qy = BY + BH - 150 - (quotes.length - i) * 58 + 40;
+    x.fillStyle = 'rgba(35,33,29,.55)'; x.font = `500 20px ${MONO}`; x.fillText(pad2(q.n), BX + 60, qy);
+    x.fillStyle = '#23211d'; x.font = `italic 500 32px "Instrument Sans", sans-serif`;
+    let s = `”${q.note}”`; while (x.measureText(s).width > BW - 200 && s.length > 4) s = s.slice(0, -2) + '…”';
+    x.fillText(s, BX + 110, qy);
+  });
+  x.textAlign = 'center';
   // stämpel
   if (done) {
     x.save(); x.translate(W - 270, BY + BH - 120); x.rotate(-0.12);

@@ -310,8 +310,8 @@ await test('historik: kalender med rivna dagar och anteckningar', async () => {
   await page.click('#backBtn');
   await page.click('.pad-card:has-text("godis")');
   await page.click('#moreBtn'); await page.click('#mHist');
-  assert.equal(await page.locator('.cal-g b').count(), 8, 'åtta dagar med lappar');
-  assert.ok(await page.locator('.hist-notes div').count() >= 3);
+  assert.equal(await page.locator('.cal-g .hit').count(), 8, 'åtta dagar med lappar');
+  assert.ok(await page.locator('.hist-notes button').count() >= 3);
   await page.screenshot({ path: SHOTS + '12-history.png' });
   await ctx.close();
 });
@@ -358,6 +358,74 @@ await test('Kör samma igen: det tomma blocket blir kvar, ett nytt varv startar'
   assert.match(await page.locator('.stub').first().innerText(), /VARV 2/);
   await page.click('#backBtn');
   assert.equal(await page.locator('.done-card').count(), done0, 'trofén ska ligga kvar');
+  await ctx.close();
+});
+
+await test('swipe höger fäster blocket överst (och i en egen grupp)', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  const target = page.locator('.pad-card:has-text("Så funkar")');
+  const b = await target.boundingBox();
+  await page.mouse.move(b.x + 20, b.y + 30); await page.mouse.down();
+  for (let i = 1; i <= 12; i++) await page.mouse.move(b.x + 20 + i * 20, b.y + 31);
+  await page.screenshot({ path: SHOTS + '13-swipe-pin.png' });
+  await page.mouse.up(); await page.waitForTimeout(800);
+  assert.match(await page.locator('.shelf-head >> nth=0').innerText(), /FÄST/i);
+  assert.match(await page.locator('.pad-card >> nth=0').innerText(), /Så funkar/);
+  const c = await page.locator('.pad-card >> nth=1').boundingBox();
+  await page.mouse.move(c.x + c.width - 20, c.y + 30); await page.mouse.down();
+  for (let i = 1; i <= 12; i++) await page.mouse.move(c.x + c.width - 20 - i * 20, c.y + 31);
+  await page.screenshot({ path: SHOTS + '14-swipe-delete.png' });
+  await page.mouse.up();
+  await ctx.close();
+});
+
+await test('utseende: mörkt läge går att välja och sparas', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn'); await page.click('#setBtn');
+  await page.click('[data-th="dark"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
+  await page.click('#sClose');
+  await page.screenshot({ path: SHOTS + '15-dark-forced.png' });
+  await page.reload(); await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
+  await ctx.close();
+});
+
+await test('utmaningslänk fyller i Nytt block', async () => {
+  const { ctx, page } = await fresh();
+  await page.goto(URL_ + '?t=Kalla%20bad&n=30&p=daily&c=himmel&i=%F0%9F%A7%8A');
+  await page.waitForSelector('#cTitle');
+  assert.equal(await page.inputValue('#cTitle'), 'Kalla bad');
+  assert.equal(await page.getAttribute('[data-n="30"]', 'aria-pressed'), 'true');
+  assert.equal(await page.getAttribute('[data-p="himmel"]', 'aria-pressed'), 'true');
+  await ctx.close();
+});
+
+await test('anteckning kan ändras i efterhand via historiken', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  await page.click('.pad-card:has-text("godis")');
+  await page.click('#moreBtn'); await page.click('#mHist');
+  await page.click('.cal-g .hit >> nth=1');
+  await page.fill('#nt2', 'Ny anteckning');
+  await page.click('#hSave');
+  await page.waitForSelector('.hist-notes');
+  assert.match(await page.locator('.hist-notes').innerText(), /Ny anteckning/);
+  await ctx.close();
+});
+
+await test('dela: förhandsvisning med anteckningar', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  await page.click('.done-card >> nth=0');
+  await page.click('#shareBtn');
+  await page.waitForSelector('#sNotes');
+  await page.click('#sNotes');
+  await page.waitForTimeout(300);
+  await page.locator('#sImg').screenshot({ path: SHOTS + '16-share-notes.png' });
+  await page.click('#sGo');
+  await page.waitForSelector('#sHint:not([hidden])');
   await ctx.close();
 });
 

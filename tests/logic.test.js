@@ -172,3 +172,24 @@ describe('symbol', () => {
     expect(cleanIcon(null)).toBe('');
   });
 });
+
+import { shelfOrder as order, makeBlock as mk2 } from '../src/logic.js';
+describe('fäst', () => {
+  it('fästa block hamnar först bland aktiva', () => {
+    const a = mk2({ title: 'a', total: 3 }), b = mk2({ title: 'b', total: 3, pace: 'free' });
+    b.pinned = true;
+    expect(order([a, b]).active.map((x) => x.title)).toEqual(['b', 'a']);
+  });
+});
+
+import { challengeQuery, parseChallenge, makeBlock as mk3 } from '../src/logic.js';
+describe('utmaning', () => {
+  it('tur och retur via länk', () => {
+    const b = mk3({ title: 'Kalla bad', total: 30, pace: 'daily', paper: 'himmel', icon: '🧊' });
+    expect(parseChallenge('rivblock://new?' + challengeQuery(b))).toEqual({ title: 'Kalla bad', total: 30, pace: 'daily', paper: 'himmel', icon: '🧊' });
+  });
+  it('skräp och HTML stoppas', () => {
+    expect(parseChallenge('?n=5')).toBe(null);
+    expect(parseChallenge('?t=x&n=9999&c=evil&i=<b>')).toEqual({ title: 'x', total: 100, pace: 'daily', paper: 'rosa', icon: '' });
+  });
+});

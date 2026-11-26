@@ -88,6 +88,15 @@ function blobToBase64(blob) {
   });
 }
 
+/** Dela en länk med text. 'shared' | 'copied' | 'failed' */
+export async function shareLink(text, url) {
+  try {
+    if (isNative()) { await Share.share({ text, url }); return 'shared'; }
+    if (navigator.share) { await navigator.share({ text, url }); return 'shared'; }
+  } catch (e) { if (e && (e.name === 'AbortError' || /cancel/i.test(String(e.message)))) return 'cancelled'; }
+  try { await navigator.clipboard.writeText(`${text} ${url}`); return 'copied'; } catch { return 'failed'; }
+}
+
 /* ---------- Spara en textfil (säkerhetskopia) ---------- */
 export async function saveTextFile(name, text) {
   try {
@@ -134,14 +143,16 @@ export async function scheduleReminders(items, ask = false) {
 }
 
 /* ---------- Statusrad (appen) ---------- */
+/** Statusradens text: ljus på mörk bakgrund och tvärtom */
+export async function setStatusBar(dark) {
+  if (!isNative()) return;
+  try { const { StatusBar, Style } = await import('@capacitor/status-bar'); await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light }); } catch { /* valfritt */ }
+}
+
 export async function setupNativeChrome() {
   if (!isNative()) return;
   try {
-    const { StatusBar, Style } = await import('@capacitor/status-bar');
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => StatusBar.setStyle({ style: mq.matches ? Style.Dark : Style.Light }).catch(() => {});
-    await apply();
-    mq.addEventListener('change', apply); // iOS byter till mörkt på kvällen
+    await setStatusBar(document.documentElement.dataset.dark === '1');
   } catch { /* valfritt */ }
   try { const { SplashScreen } = await import('@capacitor/splash-screen'); await SplashScreen.hide(); } catch { /* valfritt */ }
 }

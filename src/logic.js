@@ -112,7 +112,7 @@ export function status(b, now = new Date()) {
 export function shelfOrder(blocks, now = new Date()) {
   const rank = { waiting: 0, free: 1, rested: 2 };
   const touched = (b) => (lastTorn(b) ? lastTorn(b).at : b.createdAt);
-  const active = blocks.filter((b) => !isDone(b)).sort((a, c) => rank[status(a, now)] - rank[status(c, now)] || (touched(c) > touched(a) ? 1 : -1));
+  const active = blocks.filter((b) => !isDone(b)).sort((a, c) => (c.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || rank[status(a, now)] - rank[status(c, now)] || (touched(c) > touched(a) ? 1 : -1));
   const done = blocks.filter(isDone).sort((a, c) => (lastTorn(c).at > lastTorn(a).at ? 1 : -1));
   return { active, done };
 }
@@ -120,7 +120,7 @@ export function shelfOrder(blocks, now = new Date()) {
 /* ---------- Lagring & migrering ---------- */
 
 export function defaultSettings() {
-  return { sound: true, haptics: true, lang: 'auto', reminder: null, view: 'list', hintSeen: false, onboarded: false, pro: false };
+  return { sound: true, haptics: true, lang: 'auto', reminder: null, view: 'list', theme: 'system', hintSeen: false, onboarded: false, pro: false };
 }
 
 /** Tar emot vad som helst (gammalt format, trasig JSON-data) och returnerar ett giltigt state */
@@ -133,6 +133,7 @@ export function migrate(raw) {
   if (typeof s.reminder === 'string' && /^\d{2}:\d{2}$/.test(s.reminder)) out.settings.reminder = s.reminder;
   if (!['auto', 'sv', 'en'].includes(out.settings.lang)) out.settings.lang = 'auto';
   if (!['list', 'grid'].includes(out.settings.view)) out.settings.view = 'list';
+  if (!['system', 'light', 'dark'].includes(out.settings.theme)) out.settings.theme = 'system';
   if (Array.isArray(raw.blocks)) {
     for (const b of raw.blocks) {
       if (!b || typeof b !== 'object' || !b.title) continue;
@@ -149,6 +150,7 @@ export function migrate(raw) {
         round: Number(b.round) || 1,
         icon: cleanIcon(b.icon)
       };
+      if (b.pinned === true) blk.pinned = true;
       if (b.example) blk.example = true;
       if (b.intro) { blk.intro = true; blk.texts = Array.isArray(b.texts) ? b.texts.slice(0, blk.total) : []; }
       blk.total = Math.max(blk.total, blk.torn.length);
@@ -194,4 +196,25 @@ export function reminderPlan(blocks, hhmm, now = new Date(), days = 14) {
     if (waiting) out.push({ at, waiting });
   }
   return out;
+}
+
+/* ---------- Utmana en vän: blockets inställningar som länk ---------- */
+export function challengeQuery(b) {
+  const q = new URLSearchParams({ t: b.title, n: String(b.total), p: b.pace, c: b.paper });
+  if (b.icon) q.set('i', b.icon);
+  return q.toString();
+}
+
+/** Läser en utmaning ur en länk (okänd källa: allt valideras). null om den saknas. */
+export function parseChallenge(query) {
+  const q = new URLSearchParams(String(query || '').replace(/^.*?\?/, ''));
+  const title = (q.get('t') || '').trim().slice(0, 40);
+  if (!title) return null;
+  return {
+    title,
+    total: clampTotal(q.get('n')),
+    pace: q.get('p') === 'free' ? 'free' : 'daily',
+    paper: PAPERS.includes(q.get('c')) ? q.get('c') : 'rosa',
+    icon: cleanIcon(q.get('i') || '')
+  };
 }

@@ -2,15 +2,17 @@ import './fonts.css';
 import './styles.css';
 import {
   PAPERS, ICONS, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
-  status, shelfOrder, stats, reminderPlan, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
+  status, shelfOrder, stats, reminderPlan, challengeQuery, parseChallenge, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
 import * as audio from './audio.js';
-import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, updateWidget, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
+import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, updateWidget, setStatusBar, shareLink, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
 import { drawShare, ensureFonts, toBlob, PAPER_HEX } from './share.js';
 
 const KEY = 'rivblock_v1';
-const PAYWALL = false; // slås på när köp i App Store är kopplat
+const PAYWALL = false;
+// shortcut: tom tills appen har en egen webbplats; då blir länkarna klickbara för alla, inte bara de som har appen
+const SITE_URL = ''; // slås på när köp i App Store är kopplat
 const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -103,6 +105,8 @@ const I = {
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="4" height="4" rx="1"/><rect x="4" y="15" width="4" height="4" rx="1"/><path d="M11 7h9M11 17h9"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.3 2.3a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1-.3 1.6l-3.1 1.4-3 3 .6 4.2a1 1 0 0 1-1.7.9L10 14.2l-5.3 5.3a1 1 0 1 1-1.4-1.4L8.6 12.8 4.4 8.6a1 1 0 0 1 .9-1.7l4.2.6 3-3 1.4-3.1a1 1 0 0 1 .4-.5z"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   lock: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
 };
 
@@ -130,7 +134,7 @@ function card(b) {
   const left = remaining(b), pct = Math.round((b.torn.length / b.total) * 100);
   let sheets = '';
   for (let i = Math.min(3, left - 1); i >= 1; i--) sheets += `<div class="sheet" style="transform:translate(${i * 2}px,${i * 3}px);opacity:${1 - i * 0.22}"></div>`;
-  return `<button class="pad-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
+  return `<button class="pad-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}${b.pinned && !selecting ? `<span class="pin-badge" aria-label="${t('pinnedBlocks')}">${I.pin}</span>` : ''}
     <div class="mini" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}">${sheets}<div class="face"><div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
     <div style="min-width:0"><h3>${b.icon ? b.icon + ' ' : ''}${esc(b.title)}${tag(b)}</h3>
     <div class="meta">${t('tornOf', b.torn.length, b.total)} · ${b.pace === 'daily' ? t('daily') : t('free')}</div>
@@ -157,16 +161,18 @@ function tile(b) {
 function renderShelf() {
   const { active, done } = shelfOrder(state.blocks);
   for (const id of selected) if (!getBlock(id)) selected.delete(id);
-  const today = active.filter((b) => status(b) === 'waiting'), rest = active.filter((b) => status(b) !== 'waiting');
+  const pinned = active.filter((b) => b.pinned), loose = active.filter((b) => !b.pinned);
+  const today = loose.filter((b) => status(b) === 'waiting'), rest = loose.filter((b) => status(b) !== 'waiting');
+  const sw = (html, b) => `<div class="swipe" data-sw="${b.id}"><div class="swipe-bg" aria-hidden="true"><span class="sw-pin">${I.pin}</span><span class="sw-del">${I.trash}</span></div>${html}</div>`;
   const grid = state.settings.view === 'grid';
-  const section = (label, list, first, done) => list.length ? `<div class="shelf-head${first ? ' first' : ''}"><span class="label">${label}</span>${first ? `<button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button>` : `<span class="label">${list.length}</span>`}</div>${grid ? `<div class="tiles">${list.map(tile).join('')}</div>` : `<div class="${done ? 'done-grid' : 'cards'}">${list.map(card).join('')}</div>`}` : '';
+  const section = (label, list, first, done) => list.length ? `<div class="shelf-head${first ? ' first' : ''}"><span class="label">${label}</span>${first ? `<button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button>` : `<span class="label">${list.length}</span>`}</div>${grid ? `<div class="tiles">${list.map((b) => sw(tile(b), b)).join('')}</div>` : `<div class="${done ? 'done-grid' : 'cards'}">${list.map((b) => sw(card(b), b)).join('')}</div>`}` : '';
   let h = `<header class="topbar"><div class="wordmark" aria-label="Rivblock"><i></i>Rivblock</div>
     <div class="row"><button class="icon-btn" type="button" id="viewBtn" aria-label="${grid ? t('viewList') : t('viewGrid')}">${grid ? I.list : I.grid}</button>
     <button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
     <button class="pill-btn" type="button" id="newBtn">${I.plus}${t('newBlock')}</button></div></header>
     <div class="shelf-scroll${selecting ? ' selecting' : ''}">`;
   if (!state.blocks.length) h += `<p class="shelf-intro">${t('intro')}</p><div class="empty"><div>${t('emptyShelf')}</div><button class="pill-btn accent" type="button" data-new>${t('startBlock')}</button></div>`;
-  const groups = [[t('today2'), today], [t('activeBlocks'), rest], [t('emptyBlocks'), done]].filter(([, l]) => l.length);
+  const groups = [[t('pinnedBlocks'), pinned], [t('today2'), today], [t('activeBlocks'), rest], [t('emptyBlocks'), done]].filter(([, l]) => l.length);
   groups.forEach(([label, list], i) => { h += section(label, list, i === 0, list === done); });
   h += '</div>';
   if (selecting) {
@@ -189,12 +195,12 @@ function removeBlocks(ids) {
   });
 }
 
-/* Swipe åt vänster på ett kort tar bort blocket */
+/* Swipe som i iOS Mail: vänster = ta bort (röd papperskorg), höger = fäst överst (nål) */
 let swipe = null, swallowClick = false;
 shelfView.addEventListener('pointerdown', (e) => {
-  const card = e.target.closest('[data-open]');
-  if (!card || selecting) return;
-  swipe = { card, id: card.dataset.open, x0: e.clientX, y0: e.clientY, dx: 0, on: false, pid: e.pointerId };
+  const card = e.target.closest('[data-open]'), wrap = card?.closest('.swipe');
+  if (!card || !wrap || selecting) return;
+  swipe = { card, wrap, id: card.dataset.open, x0: e.clientX, y0: e.clientY, dx: 0, on: false, armed: false, pid: e.pointerId };
 });
 shelfView.addEventListener('pointermove', (e) => {
   if (!swipe || e.pointerId !== swipe.pid) return;
@@ -203,23 +209,45 @@ shelfView.addEventListener('pointermove', (e) => {
     if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; } // det var scroll
     if (Math.abs(dx) < 10) return;
     swipe.on = true;
+    swipe.wrap.classList.add('on');
     try { swipe.card.setPointerCapture(e.pointerId); } catch { /* */ }
   }
-  swipe.dx = dx;
+  const canPin = !isDone(getBlock(swipe.id));
+  swipe.dx = canPin ? dx : Math.min(0, dx);
+  const armed = Math.abs(swipe.dx) > swipe.card.offsetWidth * 0.4;
+  if (armed !== swipe.armed) { swipe.armed = armed; haptic.tick(); }
+  swipe.wrap.classList.toggle('l', swipe.dx < 0);
+  swipe.wrap.classList.toggle('r', swipe.dx > 0);
+  swipe.wrap.classList.toggle('armed', armed);
   swipe.card.style.transition = 'none';
   swipe.card.style.transform = `translateX(${swipe.dx}px)`;
-  swipe.card.style.opacity = String(1 - Math.min(0.6, Math.abs(swipe.dx) / swipe.card.offsetWidth));
 });
 function endSwipe() {
   if (!swipe) return;
-  const { card, id, dx, on } = swipe; swipe = null;
+  const { card, wrap, id, dx, on, armed } = swipe; swipe = null;
   if (!on) return;
   swallowClick = true; setTimeout(() => { swallowClick = false; }, 50);
-  card.style.transition = 'transform .25s ease, opacity .25s ease';
-  if (Math.abs(dx) > card.offsetWidth * 0.4) {
-    card.style.transform = `translateX(${dx < 0 ? -110 : 110}%)`; card.style.opacity = '0';
-    setTimeout(() => removeBlocks([id]), 200);
-  } else { card.style.transform = ''; card.style.opacity = ''; }
+  card.style.transition = 'transform .28s cubic-bezier(.22,1,.36,1)';
+  if (armed && dx < 0) { // ta bort: kortet åker ut och raden fälls ihop
+    card.style.transform = 'translateX(-110%)';
+    wrap.style.height = wrap.offsetHeight + 'px';
+    requestAnimationFrame(() => { wrap.classList.add('collapse'); });
+    setTimeout(() => removeBlocks([id]), 260);
+    return;
+  }
+  card.style.transform = '';
+  if (armed && dx > 0) { // fäst: nålen sticks i kortet, sedan flyttas det överst
+    const b = getBlock(id);
+    const pin = document.createElement('span'); pin.className = 'pin-drop'; pin.innerHTML = I.pin;
+    wrap.appendChild(pin);
+    setTimeout(() => haptic.snap(), 260);
+    setTimeout(() => {
+      b.pinned = !b.pinned; if (!b.pinned) delete b.pinned;
+      save(true); morph(renderShelf);
+      toast(b.pinned ? t('pinnedToast') : t('unpinnedToast'));
+    }, 520);
+  }
+  setTimeout(() => wrap.classList.remove('on', 'l', 'r', 'armed'), 280);
 }
 shelfView.addEventListener('pointerup', endSwipe);
 shelfView.addEventListener('pointercancel', endSwipe);
@@ -608,10 +636,11 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
   };
 }
 
-function openCreate() {
+function openCreate(pre = null) {
   if (!canCreate(state, PAYWALL)) return openPro(t('proLimit'));
-  const f = { total: 21, pace: 'daily', paper: 'rosa', icon: '' };
+  const f = pre ? { total: pre.total, pace: pre.pace, paper: pre.paper, icon: pre.icon } : { total: 21, pace: 'daily', paper: 'rosa', icon: '' };
   openSheet(`<h2>${t('newBlock')}</h2>${blockForm(null)}<button class="pill-btn accent big" type="button" id="cGo">${t('create')}</button>`, (sh) => {
+    if (pre) $('#cTitle', sh).value = pre.title;
     wireForm(sh, f, (title) => {
       const b = makeBlock({ title, ...f });
       state.blocks = state.blocks.filter((x) => !(x.intro && isDone(x))); // färdigt intro behövs inte längre
@@ -637,6 +666,8 @@ function openMenu(b) {
   openSheet(`<h2>${esc(b.title)}</h2><div class="menu">
       ${b.torn.length ? `<button type="button" id="mHist">${t('history')}</button>` : ''}
       ${b.intro ? '' : `<button type="button" id="mEdit">${t('edit')}</button>`}
+      ${b.intro ? '' : `<button type="button" id="mChal">${t('challenge')}</button>`}
+      ${isDone(b) || b.intro ? '' : `<button type="button" id="mPin">${b.pinned ? t('unpin') : t('pin')}</button>`}
       ${b.torn.length && !b.intro ? `<button type="button" id="mUndo">${t('undo')}</button>` : ''}
       ${b.torn.length && !b.intro ? `<button type="button" id="mShare">${t('shareBlock')}</button>` : ''}
       <button type="button" id="mReset">${t('restart')}</button>
@@ -645,6 +676,13 @@ function openMenu(b) {
     const arm = (btn, text, act) => { if (btn.dataset.armed) return act(); btn.dataset.armed = '1'; btn.textContent = text; btn.style.borderColor = 'currentColor'; haptic.nope(); };
     const on = (id, fn) => { const el = $(id, sh); if (el) el.onclick = fn; };
     on('#mEdit', () => { closeSheet(); openEdit(b); });
+    on('#mChal', async () => {
+      closeSheet();
+      const q = challengeQuery(b), url = SITE_URL ? `${SITE_URL}/app/?${q}` : `rivblock://new?${q}`;
+      const r = await shareLink(t('challengeText', b.title, b.total), url);
+      if (r === 'copied') toast(t('linkCopied'));
+    });
+    on('#mPin', () => { b.pinned = !b.pinned; if (!b.pinned) delete b.pinned; save(true); closeSheet(); toast(b.pinned ? t('pinnedToast') : t('unpinnedToast')); });
     on('#mHist', () => { closeSheet(); openHistory(b); });
     on('#mUndo', () => { closeSheet(); doUndo(b); });
     on('#mShare', () => { closeSheet(); shareBlock(b); });
@@ -672,25 +710,51 @@ function openHistory(b) {
     let cells = '<i></i>'.repeat(lead);
     for (let d = 1; d <= days; d++) {
       const k = dayKey(new Date(y, mo, d)), ns = byDay[k], isToday = k === dayKey();
-      cells += ns ? `<b class="hit${isToday ? ' now' : ''}" title="${ns.map(pad2).join(', ')}">${d}<small>${ns.length > 1 ? `${ns.length}×` : `nr ${ns[0]}`}</small></b>` : `<span${isToday ? ' class="now"' : ''}>${d}</span>`;
+      cells += ns ? `<button type="button" class="hit${isToday ? ' now' : ''}" data-day="${k}" aria-label="${ns.map((n) => t('editNoteFor', n, fmtDate(new Date(y, mo, d)))).join(', ')}">${d}<small>${ns.length > 1 ? `${ns.length}×` : `nr ${ns[0]}`}</small></button>` : `<span${isToday ? ' class="now"' : ''}>${d}</span>`;
     }
     return `<div class="cal"><div class="cal-m">${t('monthsLong')[mo]} ${y}</div><div class="cal-g">${t('weekdays').map((w) => `<em>${w}</em>`).join('')}${cells}</div></div>`;
   };
   const notes = b.torn.filter((x) => x.note).reverse();
   openSheet(`<h2>${esc(b.title)}</h2><p>${t('historySub', b.torn.length, b.total, Object.keys(byDay).length)}</p>
     <div class="cals" data-paper="${b.paper}">${months.reverse().map(cal).join('')}</div>
-    <div class="field"><span class="label">${t('notesTitle')}</span>${notes.length ? `<div class="hist-notes">${notes.map((x) => `<div><b>${pad2(x.n)}</b><span>${esc(x.note)}</span><em>${fmtDate(x.at)}</em></div>`).join('')}</div>` : `<p class="fine">${t('noNotes')}</p>`}</div>
-    <button class="pill-btn big" type="button" id="hClose">${t('close')}</button>`, (sh) => { $('#hClose', sh).onclick = closeSheet; }, t('history'));
+    <div class="field"><span class="label">${t('notesTitle')}</span>${notes.length ? `<div class="hist-notes">${notes.map((x) => `<button type="button" data-day="${dayKey(x.at)}"><b>${pad2(x.n)}</b><span>${esc(x.note)}</span><em>${fmtDate(x.at)}</em></button>`).join('')}</div>` : `<p class="fine">${t('noNotes')}</p>`}</div>
+    <div id="hEdit"></div>
+    <button class="pill-btn big" type="button" id="hClose">${t('close')}</button>`, (sh) => {
+    $('#hClose', sh).onclick = closeSheet;
+    // tryck på en dag/anteckning → skriv eller ändra anteckningen för den dagens lappar
+    sh.addEventListener('click', (e) => {
+      const day = e.target.closest('[data-day]')?.dataset.day;
+      if (!day) return;
+      const ts = b.torn.filter((x) => dayKey(x.at) === day), box = $('#hEdit', sh);
+      box.innerHTML = `<div class="note-edit">${ts.map((x) => `<label class="label" for="nt${x.n}">${t('editNoteFor', x.n, fmtDate(x.at))}</label>
+        <input class="text-in" id="nt${x.n}" data-n="${x.n}" maxlength="60" value="${esc(x.note)}" placeholder="${t('notePh')}">`).join('')}
+        <button class="pill-btn" type="button" id="hSave">${t('saveNote')}</button></div>`;
+      box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      box.querySelector('input').focus();
+      $('#hSave', sh).onclick = () => {
+        box.querySelectorAll('input').forEach((i) => { b.torn[+i.dataset.n - 1].note = i.value.trim().slice(0, 60); });
+        save(true); haptic.tick(); closeSheet(); openHistory(b);
+      };
+    });
+  }, t('history'));
 }
 
+/** Förhandsvisa delningsbilden, välj om anteckningar ska med, dela */
 async function shareBlock(b) {
   await ensureFonts();
-  const blob = await toBlob(drawShare(b));
-  const res = await shareImage(blob, t('shareTitle', b.title));
-  if (res !== 'fallback') return;
-  const url = URL.createObjectURL(blob);
-  openSheet(`<h2>${t('yourImage')}</h2><img class="share-img" src="${url}" alt="${esc(b.title)}"><p>${t('holdToSave')}</p>
-    <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => { $('#sClose', sh).onclick = () => { closeSheet(); URL.revokeObjectURL(url); }; }, t('yourImage'));
+  const hasNotes = b.torn.some((x) => x.note);
+  let withNotes = false, url = null, blob = null;
+  const draw = async () => { blob = await toBlob(drawShare(b, { notes: withNotes })); if (url) URL.revokeObjectURL(url); url = URL.createObjectURL(blob); };
+  await draw();
+  openSheet(`<h2>${t('yourImage')}</h2><img class="share-img" id="sImg" src="${url}" alt="${esc(b.title)}">
+    ${hasNotes ? `<div class="set-list"><div class="set-row"><span>${t('withNotes')}</span><button class="toggle" type="button" role="switch" id="sNotes" aria-checked="false" aria-label="${t('withNotes')}"></button></div></div>` : ''}
+    <p id="sHint" hidden>${t('holdToSave')}</p>
+    <div class="sheet-actions"><button class="pill-btn ghost" type="button" id="sClose">${t('close')}</button><button class="pill-btn accent" type="button" id="sGo">${t('shareNow')}</button></div>`, (sh) => {
+    const nt = $('#sNotes', sh);
+    if (nt) nt.onclick = async () => { withNotes = !withNotes; nt.setAttribute('aria-checked', String(withNotes)); await draw(); $('#sImg', sh).src = url; };
+    $('#sGo', sh).onclick = async () => { if ((await shareImage(blob, t('shareTitle', b.title))) === 'fallback') $('#sHint', sh).hidden = false; };
+    $('#sClose', sh).onclick = () => { closeSheet(); URL.revokeObjectURL(url); };
+  }, t('yourImage'));
 }
 
 /* ---------- Inställningar ---------- */
@@ -702,6 +766,8 @@ function openSettings() {
     <div class="set-list">
       <div class="set-row"><span>${t('language')}</span><div class="mini-seg" role="group" aria-label="${t('language')}">
         <button type="button" data-lang="auto">${t('langAuto')}</button><button type="button" data-lang="sv">Svenska</button><button type="button" data-lang="en">English</button></div></div>
+      <div class="set-row"><span>${t('theme')}</span><div class="mini-seg" role="group" aria-label="${t('theme')}">
+        <button type="button" data-th="system">${t('themeSystem')}</button><button type="button" data-th="light">${t('themeLight')}</button><button type="button" data-th="dark">${t('themeDark')}</button></div></div>
       <div class="set-row"><span>${t('sound')}</span>${toggle('sSound', s.sound, t('sound'))}</div>
       <div class="set-row"><span>${t('haptics')}</span>${toggle('sHap', s.haptics, t('haptics'))}</div>
       <div class="set-row"><span>${t('reminder')}${remindersSupported() ? '' : `<small>${t('reminderNative')}</small>`}</span>
@@ -717,6 +783,9 @@ function openSettings() {
     <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => {
     const syncLang = () => sh.querySelectorAll('[data-lang]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.lang === s.lang)));
     syncLang();
+    const syncTh = () => sh.querySelectorAll('[data-th]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.th === s.theme)));
+    syncTh();
+    sh.querySelectorAll('[data-th]').forEach((x) => x.onclick = () => { s.theme = x.dataset.th; save(); applyTheme(); syncTh(); haptic.tick(); });
     sh.querySelectorAll('[data-lang]').forEach((x) => x.onclick = () => { s.lang = x.dataset.lang; setLang(s.lang); save(); closeSheet(); rerender(); openSettings(); });
     const flip = (el, key, after) => { el.onclick = () => { s[key] = !s[key]; el.setAttribute('aria-checked', String(s[key])); save(); after && after(); }; };
     flip($('#sSound', sh), 'sound', () => { audio.setSound(s.sound); if (s.sound) { audio.unlock(); audio.settle(); } });
@@ -783,7 +852,19 @@ function makeNoise() {
   } catch { /* SVG-reserven i CSS gäller */ }
 }
 
+/* Utseende: följ telefonen, eller tvinga ljust/mörkt (CSS-tokens finns för [data-theme]) */
+const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const th = state.settings.theme, root = document.documentElement;
+  if (th === 'system') delete root.dataset.theme; else root.dataset.theme = th;
+  const dark = th === 'dark' || (th === 'system' && darkMq.matches);
+  root.dataset.dark = dark ? '1' : '';
+  setStatusBar(dark);
+}
+darkMq.addEventListener('change', () => applyTheme()); // iOS byter till mörkt på kvällen
+
 function applySettings() {
+  applyTheme();
   setLang(state.settings.lang);
   audio.setSound(state.settings.sound);
   setHaptics(state.settings.haptics);
@@ -815,6 +896,8 @@ async function boot() {
     import('@capacitor/app').then(({ App }) => App.addListener('appUrlOpen', ({ url }) => {
       const id = /^rivblock:\/\/pad\/([A-Z0-9]+)/.exec(url || '')?.[1];
       if (id && getBlock(id)) { closeSheet(); openPad(id); }
+      const ch = /^rivblock:\/\/new\?/.test(url || '') && parseChallenge(url);
+      if (ch) { closeSheet(); showShelf(); openCreate(ch); }
     })).catch(() => {});
     import('@capacitor/app').then(({ App }) => App.addListener('backButton', () => {
       if (overlay.innerHTML) closeSheet();
@@ -823,6 +906,8 @@ async function boot() {
     })).catch(() => {});
   }
   if (first) { const intro = state.blocks.find((b) => b.intro); if (intro) openPad(intro.id); }
+  const ch = parseChallenge(location.search);
+  if (ch) { history.replaceState(null, '', location.pathname); showShelf(); openCreate(ch); }
   if (!isNative() && 'serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
