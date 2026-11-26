@@ -3,3 +3,7 @@ dist
 .DS_Store
 ios/App/App/public
 android/app/src/main/assets/public
+ios/App/build
+android/.gradle
+android/build
+android/app/build
