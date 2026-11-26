@@ -120,7 +120,7 @@ export function shelfOrder(blocks, now = new Date()) {
 /* ---------- Lagring & migrering ---------- */
 
 export function defaultSettings() {
-  return { sound: true, haptics: true, lang: 'auto', reminder: null, hintSeen: false, onboarded: false, pro: false };
+  return { sound: true, haptics: true, lang: 'auto', reminder: null, view: 'list', hintSeen: false, onboarded: false, pro: false };
 }
 
 /** Tar emot vad som helst (gammalt format, trasig JSON-data) och returnerar ett giltigt state */
@@ -132,6 +132,7 @@ export function migrate(raw) {
   for (const k of Object.keys(out.settings)) if (k in s && typeof s[k] === typeof out.settings[k]) out.settings[k] = s[k];
   if (typeof s.reminder === 'string' && /^\d{2}:\d{2}$/.test(s.reminder)) out.settings.reminder = s.reminder;
   if (!['auto', 'sv', 'en'].includes(out.settings.lang)) out.settings.lang = 'auto';
+  if (!['list', 'grid'].includes(out.settings.view)) out.settings.view = 'list';
   if (Array.isArray(raw.blocks)) {
     for (const b of raw.blocks) {
       if (!b || typeof b !== 'object' || !b.title) continue;

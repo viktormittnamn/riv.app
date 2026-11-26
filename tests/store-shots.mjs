@@ -62,7 +62,7 @@ for (const lang of ['sv', 'en']) {
   // 1 hyllan
   await page.screenshot({ path: `${RAW}${lang}-1.png` });
   // 2 mitt i rivningen
-  await page.click('.tile:not(.is-done) >> nth=0');
+  await page.click('.pad-card >> nth=0');
   await page.waitForTimeout(300);
   await page.fill('#noteIn', lang === 'sv' ? 'Tungt men grymt' : 'Tough but great');
   await page.evaluate(() => document.activeElement.blur());
@@ -79,7 +79,7 @@ for (const lang of ['sv', 'en']) {
   await page.screenshot({ path: `${RAW}${lang}-3.png` });
   // 4 tomt block
   await page.click('#backBtn');
-  await page.click('.tile.is-done >> nth=0');
+  await page.click('.done-card >> nth=0');
   await page.waitForTimeout(700);
   await page.screenshot({ path: `${RAW}${lang}-4.png` });
   // 5 delningsbild

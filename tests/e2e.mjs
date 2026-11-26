@@ -128,7 +128,7 @@ await test('riv hela intro-blocket → tom kartong med knapp till första blocke
 await test('tomt exempelblock visar statistik och delningsbild', async () => {
   const { ctx, page } = await fresh();
   await page.click('#backBtn');
-  await page.click('.tile.is-done');
+  await page.click('.done-card');
   await page.waitForSelector('.done.show');
   await page.screenshot({ path: SHOTS + '06-done.png' });
   await page.click('#shareBtn');
@@ -142,7 +142,7 @@ await test('tomt exempelblock visar statistik och delningsbild', async () => {
 await test('meny: ändra block och ta bort med ångra', async () => {
   const { ctx, page } = await fresh();
   await page.click('#backBtn');
-  await page.click('.tile:not(.is-done):has-text("godis")');
+  await page.click('.pad-card:has-text("godis")');
   await page.click('#moreBtn');
   await page.click('#mEdit');
   await page.fill('#cTitle', 'Inget godis');
@@ -151,9 +151,9 @@ await test('meny: ändra block och ta bort med ångra', async () => {
   assert.equal(await page.locator('#padView h2').innerText(), 'Inget godis');
   assert.equal(await page.locator('#stage').getAttribute('data-paper'), 'smor');
   await page.click('#moreBtn'); await page.click('#mDel'); await page.click('#mDel');
-  assert.equal(await page.locator('.tile:not(.is-done)').count(), 1);
+  assert.equal(await page.locator('.pad-card').count(), 1);
   await page.click('.toast button');
-  assert.equal(await page.locator('.tile:not(.is-done)').count(), 2);
+  assert.equal(await page.locator('.pad-card').count(), 2);
   await ctx.close();
 });
 
@@ -172,7 +172,7 @@ await test('inställningar: engelska, säkerhetskopia tur och retur', async () =
   await page.click('#sImport');
   await page.fill('#sImportTxt', JSON.stringify(data));
   await page.click('#sImportGo');
-  assert.equal(await page.locator('.tile').count(), 1);
+  assert.equal(await page.locator('.pad-card, .done-card').count(), 1);
   await page.click('#setBtn'); await page.click('#sImport');
   await page.fill('#sImportTxt', 'skräp'); await page.click('#sImportGo');
   assert.match(await page.locator('.toast').innerText(), /does not look like/);
@@ -189,7 +189,7 @@ await test('mörkt läge renderar', async () => {
   const { ctx, page } = await fresh({ dark: true });
   await page.click('#backBtn');
   await page.screenshot({ path: SHOTS + '09-dark-shelf.png' });
-  await page.click('.tile:not(.is-done) >> nth=0');
+  await page.click('.pad-card >> nth=0');
   await page.screenshot({ path: SHOTS + '10-dark-pad.png' });
   await ctx.close();
 });
@@ -197,7 +197,7 @@ await test('mörkt läge renderar', async () => {
 await test('ny dag låser upp en låst lapp', async () => {
   const { ctx, page } = await fresh();
   await page.click('#backBtn');
-  await page.click('.tile:not(.is-done) >> nth=0'); // godis: väntar
+  await page.click('.pad-card >> nth=0'); // godis: väntar
   await tearDrag(page);
   assert.ok(await page.locator('#active.locked').count());
   // flytta tillbaka senaste rivningen en dag i lagringen och ladda om
@@ -208,7 +208,7 @@ await test('ny dag låser upp en låst lapp', async () => {
     localStorage.setItem('rivblock_v1', JSON.stringify(s));
   });
   await page.reload();
-  await page.click('.tile:not(.is-done) >> nth=0');
+  await page.click('.pad-card >> nth=0');
   assert.equal(await page.locator('#active.locked').count(), 0);
   await ctx.close();
 });
@@ -226,7 +226,7 @@ await test('webbläsarens bakåt: stänger blocket, och mall fyller i antal och 
   await page.goBack();
   await page.waitForTimeout(150);
   assert.equal(await page.locator('#padView').isHidden(), true);
-  await page.click('.tile:not(.is-done) >> nth=0');
+  await page.click('.pad-card >> nth=0');
   await page.click('#backBtn');
   await page.waitForTimeout(150);
   await page.click('#newBtn');
@@ -273,7 +273,7 @@ await test('hyllan: swipe vänster tar bort ett block, kort drag gör det inte, 
   const count = () => page.locator('[data-open]').count();
   const n0 = await count();
   const drag = async (dist) => {
-    const b = await page.locator('.tile:not(.is-done) >> nth=0').boundingBox();
+    const b = await page.locator('.pad-card >> nth=0').boundingBox();
     await page.mouse.move(b.x + b.width - 20, b.y + 30); await page.mouse.down();
     for (let i = 1; i <= 10; i++) await page.mouse.move(b.x + b.width - 20 - (dist * i) / 10, b.y + 31);
     await page.mouse.up(); await page.waitForTimeout(350);
@@ -308,11 +308,43 @@ await test('hyllan: Välj → Markera alla → Ta bort, och Ångra', async () =>
 await test('historik: kalender med rivna dagar och anteckningar', async () => {
   const { ctx, page } = await fresh();
   await page.click('#backBtn');
-  await page.click('.tile:has-text("godis")');
+  await page.click('.pad-card:has-text("godis")');
   await page.click('#moreBtn'); await page.click('#mHist');
   assert.equal(await page.locator('.cal-g b').count(), 8, 'åtta dagar med lappar');
   assert.ok(await page.locator('.hist-notes div').count() >= 3);
   await page.screenshot({ path: SHOTS + '12-history.png' });
+  await ctx.close();
+});
+
+await test('hyllan: lista är standard, växla till skrivbord, fingersvep tar bort i båda lägena', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true, locale: 'sv-SE', reducedMotion: 'reduce' });
+  ctx.setDefaultTimeout(6000);
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(URL_);
+  await page.waitForSelector('#active');
+  await page.tap('#backBtn');
+  assert.ok(await page.locator('.pad-card').count(), 'lista som standard');
+  const cdp = await ctx.newCDPSession(page);
+  const swipeLeft = async (sel) => {
+    const b = await page.locator(sel).first().boundingBox();
+    const x0 = b.x + b.width - 12, y = b.y + 30;
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+    for (let i = 1; i <= 15; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 - i * 16, y: y + 1 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(400);
+  };
+  const n = () => page.locator('[data-open]').count();
+  const n0 = await n();
+  await swipeLeft('.pad-card');
+  assert.equal(await n(), n0 - 1, 'swipe i listan');
+  await page.tap('#viewBtn');
+  assert.ok(await page.locator('.tile').count(), 'skrivbord');
+  await swipeLeft('.tile');
+  assert.equal(await n(), n0 - 2, 'swipe på skrivbordet');
+  await page.reload();
+  await page.waitForSelector('#shelfView .topbar', { state: 'attached' });
+  assert.ok(await page.locator('.tile').count(), 'valet sparas');
   await ctx.close();
 });
 

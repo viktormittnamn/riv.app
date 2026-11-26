@@ -101,6 +101,8 @@ const I = {
   soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>',
   soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m23 9-6 6M17 9l6 6"/></svg>',
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="4" height="4" rx="1"/><rect x="4" y="15" width="4" height="4" rx="1"/><path d="M11 7h9M11 17h9"/></svg>',
   lock: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V11a1 1 0 0 1 1-1h1zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
 };
 
@@ -120,6 +122,21 @@ let selecting = false;
 const selected = new Set();
 const pick = (b) => (selecting ? `<span class="pick" aria-hidden="true">${selected.has(b.id) ? '✓' : ''}</span>` : '');
 const sel = (b) => (selecting ? ` aria-pressed="${selected.has(b.id)}"` : '');
+
+function card(b) {
+  if (isDone(b)) return `<button class="done-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
+    <div class="tag" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}"><b>${b.icon ? b.icon + ' ' : ''}${b.total} / ${b.total}</b></div>
+    <div><h4>${esc(b.title)}</h4><div class="meta">${t('finished', fmtDate(lastTorn(b).at, true))}${b.example ? ' · ' + t('example').toLowerCase() : ''}</div></div></button>`;
+  const left = remaining(b), pct = Math.round((b.torn.length / b.total) * 100);
+  let sheets = '';
+  for (let i = Math.min(3, left - 1); i >= 1; i--) sheets += `<div class="sheet" style="transform:translate(${i * 2}px,${i * 3}px);opacity:${1 - i * 0.22}"></div>`;
+  return `<button class="pad-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
+    <div class="mini" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}">${sheets}<div class="face">${b.icon ? `<span class="ico">${b.icon}</span>` : ''}<div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
+    <div style="min-width:0"><h3>${esc(b.title)}${tag(b)}</h3>
+    <div class="meta">${t('tornOf', b.torn.length, b.total)} · ${b.pace === 'daily' ? t('daily') : t('free')}</div>
+    <div class="progress"><span style="width:${pct}%"></span></div>
+    <div class="chips">${chipFor(b)}</div></div></button>`;
+}
 
 function tile(b) {
   const left = remaining(b), done = isDone(b), st = status(b), pct = Math.round((b.torn.length / b.total) * 100);
@@ -141,14 +158,16 @@ function renderShelf() {
   const { active, done } = shelfOrder(state.blocks);
   for (const id of selected) if (!getBlock(id)) selected.delete(id);
   const today = active.filter((b) => status(b) === 'waiting'), rest = active.filter((b) => status(b) !== 'waiting');
-  const section = (label, list, first) => list.length ? `<div class="shelf-head${first ? ' first' : ''}"><span class="label">${label}</span>${first ? `<button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button>` : `<span class="label">${list.length}</span>`}</div><div class="tiles">${list.map(tile).join('')}</div>` : '';
+  const grid = state.settings.view === 'grid';
+  const section = (label, list, first, done) => list.length ? `<div class="shelf-head${first ? ' first' : ''}"><span class="label">${label}</span>${first ? `<button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button>` : `<span class="label">${list.length}</span>`}</div>${grid ? `<div class="tiles">${list.map(tile).join('')}</div>` : `<div class="${done ? 'done-grid' : 'cards'}">${list.map(card).join('')}</div>`}` : '';
   let h = `<header class="topbar"><div class="wordmark" aria-label="Rivblock"><i></i>Rivblock</div>
-    <div class="row"><button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
+    <div class="row"><button class="icon-btn" type="button" id="viewBtn" aria-label="${grid ? t('viewList') : t('viewGrid')}">${grid ? I.list : I.grid}</button>
+    <button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
     <button class="pill-btn" type="button" id="newBtn">${I.plus}${t('newBlock')}</button></div></header>
     <div class="shelf-scroll${selecting ? ' selecting' : ''}">`;
   if (!state.blocks.length) h += `<p class="shelf-intro">${t('intro')}</p><div class="empty"><div>${t('emptyShelf')}</div><button class="pill-btn accent" type="button" data-new>${t('startBlock')}</button></div>`;
   const groups = [[t('today2'), today], [t('activeBlocks'), rest], [t('emptyBlocks'), done]].filter(([, l]) => l.length);
-  groups.forEach(([label, list], i) => { h += section(label, list, i === 0); });
+  groups.forEach(([label, list], i) => { h += section(label, list, i === 0, list === done); });
   h += '</div>';
   if (selecting) {
     const all = selected.size === state.blocks.length;
@@ -186,10 +205,10 @@ shelfView.addEventListener('pointermove', (e) => {
     swipe.on = true;
     try { swipe.card.setPointerCapture(e.pointerId); } catch { /* */ }
   }
-  swipe.dx = Math.min(0, dx);
+  swipe.dx = dx;
   swipe.card.style.transition = 'none';
   swipe.card.style.transform = `translateX(${swipe.dx}px)`;
-  swipe.card.style.opacity = String(1 - Math.min(0.6, -swipe.dx / swipe.card.offsetWidth));
+  swipe.card.style.opacity = String(1 - Math.min(0.6, Math.abs(swipe.dx) / swipe.card.offsetWidth));
 });
 function endSwipe() {
   if (!swipe) return;
@@ -197,8 +216,8 @@ function endSwipe() {
   if (!on) return;
   swallowClick = true; setTimeout(() => { swallowClick = false; }, 50);
   card.style.transition = 'transform .25s ease, opacity .25s ease';
-  if (-dx > card.offsetWidth * 0.4) {
-    card.style.transform = 'translateX(-110%)'; card.style.opacity = '0';
+  if (Math.abs(dx) > card.offsetWidth * 0.4) {
+    card.style.transform = `translateX(${dx < 0 ? -110 : 110}%)`; card.style.opacity = '0';
     setTimeout(() => removeBlocks([id]), 200);
   } else { card.style.transform = ''; card.style.opacity = ''; }
 }
@@ -207,6 +226,7 @@ shelfView.addEventListener('pointercancel', endSwipe);
 
 shelfView.addEventListener('click', (e) => {
   if (swallowClick) return;
+  if (e.target.closest('#viewBtn')) { state.settings.view = state.settings.view === 'grid' ? 'list' : 'grid'; save(); haptic.tick(); return morph(renderShelf); }
   if (e.target.closest('#selBtn')) { selecting = !selecting; selected.clear(); return renderShelf(); }
   if (e.target.closest('#selAll')) { if (selected.size === state.blocks.length) selected.clear(); else state.blocks.forEach((b) => selected.add(b.id)); return renderShelf(); }
   if (e.target.closest('#selDel')) { const ids = [...selected]; selecting = false; selected.clear(); return removeBlocks(ids); }
