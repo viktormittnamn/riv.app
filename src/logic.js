@@ -3,6 +3,7 @@
 export const PAPERS = ['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'];
 export const FREE_PAPERS = ['rosa', 'mint', 'kvitto'];
 export const MAX_TOTAL = 100;
+export const ICONS = ['🏃', '💪', '🧘', '🚶', '🚴', '🏊', '🧊', '📚', '✍️', '🎸', '💧', '🥦', '🍬', '🍷', '☕', '😴', '📵', '🧹', '💸', '❤️'];
 export const SCHEMA = 2;
 
 export function uid() {
@@ -34,8 +35,9 @@ export function clampTotal(n) {
   return Math.max(1, Math.min(MAX_TOTAL, v));
 }
 
-export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', now = new Date() }) {
+export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', icon = '', now = new Date() }) {
   return {
+    icon: cleanIcon(icon),
     id: uid(),
     title: String(title || '').trim().slice(0, 40),
     total: clampTotal(total),
@@ -47,6 +49,9 @@ export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', now = 
     round: 1
   };
 }
+
+/** En symbol: kort sträng utan HTML-tecken, annars tom */
+export const cleanIcon = (x) => (typeof x === 'string' && x.length <= 8 && !/[<>&"']/.test(x) ? x : '');
 
 export const isDone = (b) => b.torn.length >= b.total;
 export const lastTorn = (b) => (b.torn.length ? b.torn[b.torn.length - 1] : null);
@@ -140,7 +145,8 @@ export function migrate(raw) {
         createdAt: b.createdAt && !isNaN(new Date(b.createdAt)) ? b.createdAt : new Date().toISOString(),
         torn: torn.map((t, i) => ({ n: i + 1, at: t.at, note: String(t.note || '').slice(0, 60) })),
         draft: String(b.draft || '').slice(0, 60),
-        round: Number(b.round) || 1
+        round: Number(b.round) || 1,
+        icon: cleanIcon(b.icon)
       };
       if (b.example) blk.example = true;
       if (b.intro) { blk.intro = true; blk.texts = Array.isArray(b.texts) ? b.texts.slice(0, blk.total) : []; }

@@ -162,3 +162,13 @@ describe('påminnelser', () => {
     expect(plan[0].waiting).toBe(2);
   });
 });
+
+import { cleanIcon } from '../src/logic.js';
+describe('symbol', () => {
+  it('tillåter emoji, stoppar HTML och långa strängar', () => {
+    expect(cleanIcon('🧊')).toBe('🧊');
+    expect(cleanIcon('<img>')).toBe('');
+    expect(cleanIcon('x'.repeat(9))).toBe('');
+    expect(cleanIcon(null)).toBe('');
+  });
+});

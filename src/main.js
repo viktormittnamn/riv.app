@@ -1,7 +1,7 @@
 import './fonts.css';
 import './styles.css';
 import {
-  PAPERS, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
+  PAPERS, ICONS, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
   status, shelfOrder, stats, reminderPlan, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
@@ -111,35 +111,34 @@ const selected = new Set();
 const pick = (b) => (selecting ? `<span class="pick" aria-hidden="true">${selected.has(b.id) ? '✓' : ''}</span>` : '');
 const sel = (b) => (selecting ? ` aria-pressed="${selected.has(b.id)}"` : '');
 
+function tile(b) {
+  const left = remaining(b), done = isDone(b), st = status(b), pct = Math.round((b.torn.length / b.total) * 100);
+  let sheets = '';
+  for (let i = Math.min(3, done ? 0 : left - 1); i >= 1; i--) sheets += `<i class="sheet" style="transform:translateY(${i * 3}px);left:${i * 2}px;right:${i * 2}px"></i>`;
+  const meta = done ? t('finished', fmtDate(lastTorn(b).at)) : st === 'waiting' ? t('chipWaiting') : st === 'rested' ? t('chipRested') : t('tornOf', b.torn.length, b.total);
+  return `<button class="tile${done ? ' is-done' : ''}${st === 'waiting' ? ' is-waiting' : ''}" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
+    <div class="tile-pad" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}">${sheets}
+      <div class="face"><b class="bind"></b>
+        ${b.icon ? `<span class="ico">${b.icon}</span>` : ''}
+        <div class="num">${done ? '✓' : left}</div><div class="cap">${done ? t('bindingDone') : t('left')}</div>
+        ${done ? '' : `<div class="bar"><span style="width:${pct}%"></span></div>`}
+      </div></div>
+    <div class="tile-title">${esc(b.title)}${tag(b)}</div>
+    <div class="tile-meta">${meta}</div></button>`;
+}
+
 function renderShelf() {
   const { active, done } = shelfOrder(state.blocks);
   for (const id of selected) if (!getBlock(id)) selected.delete(id);
+  const today = active.filter((b) => status(b) === 'waiting'), rest = active.filter((b) => status(b) !== 'waiting');
+  const section = (label, list, first) => list.length ? `<div class="shelf-head${first ? ' first' : ''}"><span class="label">${label}</span>${first ? `<button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button>` : `<span class="label">${list.length}</span>`}</div><div class="tiles">${list.map(tile).join('')}</div>` : '';
   let h = `<header class="topbar"><div class="wordmark" aria-label="Rivblock"><i></i>Rivblock</div>
     <div class="row"><button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
     <button class="pill-btn" type="button" id="newBtn">${I.plus}${t('newBlock')}</button></div></header>
-    <div class="shelf-scroll${selecting ? ' selecting' : ''}"><p class="shelf-intro">${t('intro')}</p>
-    ${state.blocks.length ? `<div class="shelf-head first"><span class="label">${t('activeBlocks')}</span><button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button></div>` : ''}`;
-  if (!active.length) {
-    h += `<div class="empty"><div>${t('emptyShelf')}</div><button class="pill-btn accent" type="button" data-new>${t('startBlock')}</button></div>`;
-  } else {
-    h += '<div class="cards">' + active.map((b) => {
-      const left = remaining(b), pct = Math.round((b.torn.length / b.total) * 100);
-      let sheets = '';
-      for (let i = Math.min(3, left - 1); i >= 1; i--) sheets += `<div class="sheet" style="transform:translate(${i * 2}px,${i * 3}px);opacity:${1 - i * 0.22}"></div>`;
-      return `<button class="pad-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
-        <div class="mini" data-paper="${b.paper}">${sheets}<div class="face"><div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
-        <div style="min-width:0"><h3>${esc(b.title)}${tag(b)}</h3>
-        <div class="meta">${t('tornOf', b.torn.length, b.total)} · ${b.pace === 'daily' ? t('daily') : t('free')}</div>
-        <div class="progress"><span style="width:${pct}%"></span></div>
-        <div class="chips">${chipFor(b)}</div></div></button>`;
-    }).join('') + '</div>';
-  }
-  if (done.length) {
-    h += `<div class="shelf-head"><span class="label">${t('emptyBlocks')}</span><span class="label">${done.length}</span></div>`;
-    h += '<div class="done-grid">' + done.map((b) => `<button class="done-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
-      <div class="tag" data-paper="${b.paper}"><b>${b.total} / ${b.total}</b></div>
-      <div><h4>${esc(b.title)}</h4><div class="meta">${t('finished', fmtDate(lastTorn(b).at, true))}${b.example ? ' · ' + t('example').toLowerCase() : ''}</div></div></button>`).join('') + '</div>';
-  }
+    <div class="shelf-scroll${selecting ? ' selecting' : ''}">`;
+  if (!state.blocks.length) h += `<p class="shelf-intro">${t('intro')}</p><div class="empty"><div>${t('emptyShelf')}</div><button class="pill-btn accent" type="button" data-new>${t('startBlock')}</button></div>`;
+  const groups = [[t('today2'), today], [t('activeBlocks'), rest], [t('emptyBlocks'), done]].filter(([, l]) => l.length);
+  groups.forEach(([label, list], i) => { h += section(label, list, i === 0); });
   h += '</div>';
   if (selecting) {
     const all = selected.size === state.blocks.length;
@@ -203,7 +202,7 @@ shelfView.addEventListener('click', (e) => {
   if (e.target.closest('#selDel')) { const ids = [...selected]; selecting = false; selected.clear(); return removeBlocks(ids); }
   const o = e.target.closest('[data-open]');
   if (o && selecting) { const id = o.dataset.open; selected.has(id) ? selected.delete(id) : selected.add(id); haptic.tick(); return renderShelf(); }
-  if (o) return openPad(o.dataset.open);
+  if (o) return morph(() => openPad(o.dataset.open));
   if (e.target.closest('#newBtn,[data-new]')) return openCreate();
   if (e.target.closest('#setBtn')) return openSettings();
 });
@@ -236,10 +235,16 @@ function ticketHTML(b, n, kind, locked) {
       ${locked ? `<div class="big-stamp">${t('stampTomorrow')}<small>${t('stampTomorrowSub')}</small></div>` : ''}
       <div class="t-row"><span>${t('ticketNo')}</span><span>${dateLbl}</span></div>
       <div class="bignum">${pad2(n)}<small>/${pad2(b.total)}</small></div>
-      <div class="t-title">${esc(b.title)}</div>${lead}
+      <div class="t-title">${b.icon ? `<span class="t-ico">${b.icon}</span> ` : ''}${esc(b.title)}</div>${lead}
       ${note}
       <div class="t-foot"><div><div class="barcode"></div><div class="serial">RB-${b.id}-${pad2(n)}</div></div><div class="stamp">${t('tearOff')}</div></div>
     </div>`;
+}
+
+/** Byt vy med zoom från blocket på hyllan (iOS 18+/Chrome), annars direkt */
+function morph(fn) {
+  if (!document.startViewTransition || reduceMotion()) return fn();
+  document.startViewTransition(fn);
 }
 
 function openPad(id, entering = false) {
@@ -285,7 +290,7 @@ function renderPad(entering) {
     <h2>${esc(b.title)}</h2><div class="row">
     <button class="icon-btn" type="button" id="soundBtn" aria-label="${state.settings.sound ? t('soundOff') : t('soundOn')}">${state.settings.sound ? I.soundOn : I.soundOff}</button>
     <button class="icon-btn" type="button" id="moreBtn" aria-label="${t('more')}">${I.more}</button></div></header>
-    <div class="pad-main"><div class="stage" id="stage" data-paper="${b.paper}">
+    <div class="pad-main"><div class="stage" id="stage" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}">
     <div class="board"><div class="binding"><span>${done ? t('bindingDone') : t('bindingLeft', left)}</span></div>${doneHTML(b)}</div>${b.torn.length && !done ? '<i class="remnant"></i>' : ''}`;
   if (!done) {
     for (let i = Math.min(4, left - 1); i >= 1; i--) h += `<div class="stack-sheet" style="transform:translateY(${i * 2.6}px);left:${i * 1.2}px;right:${i * 1.2}px;z-index:${10 - i}"></div>`;
@@ -299,7 +304,7 @@ function renderPad(entering) {
 }
 
 function bindPad(b) {
-  $('#backBtn').onclick = () => showShelf();
+  $('#backBtn').onclick = () => morph(() => showShelf());
   $('#soundBtn').onclick = () => {
     state.settings.sound = !state.settings.sound; audio.setSound(state.settings.sound); save();
     if (state.settings.sound) { audio.unlock(); audio.rip(b.paper, 0.7, 0.5); }
@@ -524,6 +529,8 @@ function blockForm(b) {
     <div class="field"><span class="label">${t('pace')}</span><div class="pace">
       <button type="button" data-pace="daily"><b>${t('paceDaily')}</b><span>${t('paceDailySub')}</span></button>
       <button type="button" data-pace="free"><b>${t('paceFree')}</b><span>${t('paceFreeSub')}</span></button></div></div>
+    <div class="field"><span class="label">${t('icon')}</span><div class="icons">
+      <button type="button" data-ic="" aria-label="${t('noIcon')}">–</button>${ICONS.map((x) => `<button type="button" data-ic="${x}">${x}</button>`).join('')}</div></div>
     <div class="field"><span class="label">${t('paper')}</span><div class="swatches">
       ${PAPERS.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`;
 }
@@ -535,19 +542,21 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
     sh.querySelectorAll('[data-n]').forEach((x) => { x.setAttribute('aria-pressed', String(+x.dataset.n === f.total)); x.disabled = +x.dataset.n < minCount; });
     sh.querySelectorAll('[data-pace]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.pace === f.pace)));
     sh.querySelectorAll('[data-p]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.p === f.paper)));
+    sh.querySelectorAll('[data-ic]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.ic === f.icon)));
     if (document.activeElement !== ci) ci.value = preset.includes(f.total) ? '' : f.total;
   }
   sync();
   sh.addEventListener('click', (e) => {
     let x;
     if ((x = e.target.closest('[data-sug]'))) {
-      const [title, n, pace, paper] = t('suggestions')[+x.dataset.sug];
-      ti.value = title; f.total = Math.max(minCount, n); f.pace = pace;
+      const [title, n, pace, paper, icon] = t('suggestions')[+x.dataset.sug];
+      ti.value = title; f.total = Math.max(minCount, n); f.pace = pace; f.icon = icon;
       if (!paperLocked(paper, state, PAYWALL)) f.paper = paper;
       sync(); haptic.tick();
     }
     else if ((x = e.target.closest('[data-n]'))) { f.total = +x.dataset.n; sync(); }
     else if ((x = e.target.closest('[data-pace]'))) { f.pace = x.dataset.pace; sync(); }
+    else if ((x = e.target.closest('[data-ic]'))) { f.icon = x.dataset.ic; sync(); haptic.tick(); }
     else if ((x = e.target.closest('[data-p]'))) {
       if (paperLocked(x.dataset.p, state, PAYWALL)) return openPro(t('proPaper'));
       f.paper = x.dataset.p; sync();
@@ -565,7 +574,7 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
 
 function openCreate() {
   if (!canCreate(state, PAYWALL)) return openPro(t('proLimit'));
-  const f = { total: 21, pace: 'daily', paper: 'rosa' };
+  const f = { total: 21, pace: 'daily', paper: 'rosa', icon: '' };
   openSheet(`<h2>${t('newBlock')}</h2>${blockForm(null)}<button class="pill-btn accent big" type="button" id="cGo">${t('create')}</button>`, (sh) => {
     wireForm(sh, f, (title) => {
       const b = makeBlock({ title, ...f });
@@ -578,10 +587,10 @@ function openCreate() {
 }
 
 function openEdit(b) {
-  const f = { total: b.total, pace: b.pace, paper: b.paper };
+  const f = { total: b.total, pace: b.pace, paper: b.paper, icon: b.icon || '' };
   openSheet(`<h2>${t('edit')}</h2>${blockForm(b)}<button class="pill-btn accent big" type="button" id="cGo">${t('saveChanges')}</button>`, (sh) => {
     wireForm(sh, f, (title) => {
-      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; setTotal(b, f.total);
+      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; b.icon = f.icon; setTotal(b, f.total);
       delete b.example;
       save(true); closeSheet(); renderPad(false);
     }, Math.max(1, b.torn.length));
@@ -590,6 +599,7 @@ function openEdit(b) {
 
 function openMenu(b) {
   openSheet(`<h2>${esc(b.title)}</h2><div class="menu">
+      ${b.torn.length ? `<button type="button" id="mHist">${t('history')}</button>` : ''}
       ${b.intro ? '' : `<button type="button" id="mEdit">${t('edit')}</button>`}
       ${b.torn.length && !b.intro ? `<button type="button" id="mUndo">${t('undo')}</button>` : ''}
       ${b.torn.length && !b.intro ? `<button type="button" id="mShare">${t('shareBlock')}</button>` : ''}
@@ -599,6 +609,7 @@ function openMenu(b) {
     const arm = (btn, text, act) => { if (btn.dataset.armed) return act(); btn.dataset.armed = '1'; btn.textContent = text; btn.style.borderColor = 'currentColor'; haptic.nope(); };
     const on = (id, fn) => { const el = $(id, sh); if (el) el.onclick = fn; };
     on('#mEdit', () => { closeSheet(); openEdit(b); });
+    on('#mHist', () => { closeSheet(); openHistory(b); });
     on('#mUndo', () => { closeSheet(); doUndo(b); });
     on('#mShare', () => { closeSheet(); shareBlock(b); });
     on('#mReset', function () { arm(this, t('restartConfirm'), () => { restart(b); save(true); closeSheet(); renderPad(true); }); });
@@ -611,6 +622,29 @@ function openMenu(b) {
     });
     on('#mCancel', closeSheet);
   }, b.title);
+}
+
+/** Månadskalendrar (måndag först) där dagar med rivna lappar är markerade */
+function openHistory(b) {
+  const byDay = {};
+  for (const x of b.torn) (byDay[dayKey(x.at)] ||= []).push(x.n);
+  const first = new Date(b.torn.length ? b.torn[0].at : b.createdAt), now = new Date();
+  const months = [];
+  for (let d = new Date(first.getFullYear(), first.getMonth(), 1); d <= now && months.length < 12; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) months.push(d);
+  const cal = (m) => {
+    const y = m.getFullYear(), mo = m.getMonth(), days = new Date(y, mo + 1, 0).getDate(), lead = (new Date(y, mo, 1).getDay() + 6) % 7;
+    let cells = '<i></i>'.repeat(lead);
+    for (let d = 1; d <= days; d++) {
+      const k = dayKey(new Date(y, mo, d)), ns = byDay[k], isToday = k === dayKey();
+      cells += ns ? `<b class="hit${isToday ? ' now' : ''}" title="${ns.map(pad2).join(', ')}">${ns.length > 1 ? `${pad2(ns[0])}+` : pad2(ns[0])}</b>` : `<span${isToday ? ' class="now"' : ''}>${d}</span>`;
+    }
+    return `<div class="cal"><div class="cal-m">${t('monthsLong')[mo]} ${y}</div><div class="cal-g">${t('weekdays').map((w) => `<em>${w}</em>`).join('')}${cells}</div></div>`;
+  };
+  const notes = b.torn.filter((x) => x.note).reverse();
+  openSheet(`<h2>${esc(b.title)}</h2><p>${t('historySub', b.torn.length, b.total, Object.keys(byDay).length)}</p>
+    <div class="cals" data-paper="${b.paper}">${months.reverse().map(cal).join('')}</div>
+    <div class="field"><span class="label">${t('notesTitle')}</span>${notes.length ? `<div class="hist-notes">${notes.map((x) => `<div><b>${pad2(x.n)}</b><span>${esc(x.note)}</span><em>${fmtDate(x.at)}</em></div>`).join('')}</div>` : `<p class="fine">${t('noNotes')}</p>`}</div>
+    <button class="pill-btn big" type="button" id="hClose">${t('close')}</button>`, (sh) => { $('#hClose', sh).onclick = closeSheet; }, t('history'));
 }
 
 async function shareBlock(b) {
