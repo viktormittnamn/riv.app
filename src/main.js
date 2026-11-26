@@ -222,7 +222,7 @@ function renderPad(entering) {
     <button class="icon-btn" type="button" id="soundBtn" aria-label="${state.settings.sound ? t('soundOff') : t('soundOn')}">${state.settings.sound ? I.soundOn : I.soundOff}</button>
     <button class="icon-btn" type="button" id="moreBtn" aria-label="${t('more')}">${I.more}</button></div></header>
     <div class="pad-main"><div class="stage" id="stage" data-paper="${b.paper}">
-    <div class="board"><div class="binding"><span>${done ? t('bindingDone') : t('bindingLeft', left)}</span></div>${doneHTML(b)}</div>`;
+    <div class="board"><div class="binding"><span>${done ? t('bindingDone') : t('bindingLeft', left)}</span></div>${doneHTML(b)}</div>${b.torn.length && !done ? '<i class="remnant"></i>' : ''}`;
   if (!done) {
     for (let i = Math.min(4, left - 1); i >= 1; i--) h += `<div class="stack-sheet" style="transform:translateY(${i * 2.6}px);left:${i * 1.2}px;right:${i * 1.2}px;z-index:${10 - i}"></div>`;
     if (left > 1 && !locked) h += `<div class="ticket preview" aria-hidden="true">${ticketHTML(b, n + 1, 'preview')}</div>`;
@@ -269,7 +269,7 @@ function bindPad(b) {
    RIV-FYSIK
    ========================================================= */
 const THRESHOLD = 0.8;
-const drag = { on: false, id: null, x0: 0, y0: 0, lx: 0, lt: 0, dir: 'ltr', locked: false, prog: 0, step: 0, busy: false };
+const drag = { on: false, id: null, x0: 0, y0: 0, lx: 0, lt: 0, dir: 'ltr', locked: false, prog: 0, step: 0, vel: 0, busy: false };
 
 function parts() {
   const a = $('#active');
@@ -303,7 +303,8 @@ function applyTear(E, p, dir, dy) {
   E.body.classList.toggle('tearing', c > 0.03);
   const tilt = -s * (c * 14.5 + Math.max(0, dy * 0.03));
   const y = c * 24 + Math.max(0, Math.min(36, dy * 0.3)), x = s * c * 12;
-  E.body.style.transform = `translate3d(${x}px,${y}px,0) rotate(${tilt}deg)`;
+  // pappret lyfter från hörnet: lätt 3D-böj som växer med rivningen
+  E.body.style.transform = `perspective(900px) translate3d(${x}px,${y}px,0) rotate(${tilt}deg) rotateX(${c * 9}deg) rotateY(${-s * c * 7}deg)`;
   E.gap.style.transition = 'none';
   E.gap.style.opacity = c > 0.02 ? '1' : '0';
   E.gap.style.width = Math.min(94, c * 96) + '%';
@@ -323,7 +324,9 @@ function onMove(e) {
   const now = performance.now(), vel = Math.abs(e.clientX - drag.lx) / Math.max(8, now - drag.lt);
   drag.lx = e.clientX; drag.lt = now;
   const b = getBlock(current);
-  if (p > drag.step + 0.04) { drag.step = p; audio.rip(b.paper, Math.min(2.2, vel), p); haptic.tick(); }
+  const hole = 9 / span; // en knäpp per hål i perforeringen (hålen sitter var 9:e px)
+  if (p > drag.step + hole) { drag.step = p; audio.rip(b.paper, Math.min(2.2, vel), p); haptic.tick(); }
+  drag.vel = vel;
   drag.prog = p;
   applyTear(E, p, drag.dir, dy);
   if (p >= THRESHOLD) completeTear(vel);
@@ -343,6 +346,7 @@ function onUp(e) {
   try { E.a.releasePointerCapture(e.pointerId); } catch { /* */ }
   if (drag.busy) return;
   haptic.end();
+  if (drag.prog > 0.5 && drag.vel > 0.5) return completeTear(drag.vel); // snärt över halvvägs räcker
   if (drag.prog > 0.06) audio.settle();
   springBack(E);
 }
@@ -398,12 +402,15 @@ function completeTear(vel) {
   if (reduceMotion()) { ghost.remove(); drag.busy = false; return; }
   const s = drag.dir === 'ltr' ? 1 : -1;
   const fx = s * (90 + Math.min(125, vel * 75)), rot = s * (26 + Math.random() * 14);
-  requestAnimationFrame(() => {
-    ghost.style.transition = 'transform .7s cubic-bezier(.32,.02,.72,.25), opacity .64s ease-in';
-    ghost.style.transform = `translate3d(${fx}px,520px,0) rotate(${rot}deg)`;
-    ghost.style.opacity = '0';
-  });
-  setTimeout(() => { ghost.remove(); drag.busy = false; }, 720);
+  ghost.classList.add('ragged');
+  const from = ghost.style.transform || 'none';
+  ghost.animate([
+    { transform: from, opacity: 1 },
+    { transform: `perspective(900px) translate3d(${fx * 0.35}px,140px,0) rotate(${rot * 0.4}deg) rotateY(${s * 28}deg)`, opacity: 1, offset: 0.35 },
+    { transform: `perspective(900px) translate3d(${fx * 0.7}px,330px,0) rotate(${rot * 0.75}deg) rotateY(${-s * 18}deg)`, opacity: 0.85, offset: 0.7 },
+    { transform: `perspective(900px) translate3d(${fx}px,540px,0) rotate(${rot}deg) rotateY(${s * 10}deg)`, opacity: 0 }
+  ], { duration: 820, easing: 'cubic-bezier(.4,.05,.7,.4)', fill: 'forwards' });
+  setTimeout(() => { ghost.remove(); drag.busy = false; }, 840);
 }
 
 function doUndo(b) {

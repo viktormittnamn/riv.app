@@ -311,3 +311,8 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 
 /* ikonknapp i topbar på hyllan */
 .topbar .row .icon-btn { flex: none; }
+
+/* Rivkänsla: sågtandad kant på lappen som faller, trasig remsa kvar under bindningen */
+.falling.ragged { clip-path: polygon(0 6px, 3% 0, 6% 6px, 9% 1px, 12% 6px, 15% 0, 18% 5px, 21% 1px, 24% 6px, 27% 0, 30% 5px, 33% 1px, 36% 6px, 39% 0, 42% 6px, 45% 1px, 48% 5px, 51% 0, 54% 6px, 57% 1px, 60% 6px, 63% 0, 66% 5px, 69% 1px, 72% 6px, 75% 0, 78% 6px, 81% 1px, 84% 5px, 87% 0, 90% 6px, 93% 1px, 96% 6px, 100% 0, 100% 100%, 0 100%); }
+.remnant { position: absolute; left: 0; right: 0; top: 24px; height: 7px; z-index: 30; pointer-events: none; background: color-mix(in srgb, var(--p-bg) 55%, #fff);
+  clip-path: polygon(0 0, 100% 0, 100% 3px, 97% 7px, 94% 2px, 91% 6px, 88% 3px, 85% 7px, 82% 2px, 79% 6px, 76% 3px, 73% 7px, 70% 2px, 67% 6px, 64% 3px, 61% 7px, 58% 2px, 55% 6px, 52% 3px, 49% 7px, 46% 2px, 43% 6px, 40% 3px, 37% 7px, 34% 2px, 31% 6px, 28% 3px, 25% 7px, 22% 2px, 19% 6px, 16% 3px, 13% 7px, 10% 2px, 7% 6px, 4% 3px, 0 7px); }

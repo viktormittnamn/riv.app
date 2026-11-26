@@ -46,12 +46,12 @@ function webTick() {
   } catch { /* ingen haptik */ }
 }
 export const haptic = {
-  tick() { if (!hapticsOn) return; if (isNative()) Haptics.selectionChanged().catch(() => {}); else webTick(); },
+  tick() { if (!hapticsOn) return; if (isNative()) Haptics.impact({ style: ImpactStyle.Light }).catch(() => {}); else webTick(); },
   start() { if (!hapticsOn) return; if (isNative()) Haptics.selectionStart().catch(() => {}); },
   end() { if (!hapticsOn) return; if (isNative()) Haptics.selectionEnd().catch(() => {}); },
   snap() {
     if (!hapticsOn) return;
-    if (isNative()) Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+    if (isNative()) Haptics.impact({ style: ImpactStyle.Heavy }).catch(() => {});
     else if (navigator.vibrate) navigator.vibrate([16, 20, 36]); else webTick();
   },
   success() { if (!hapticsOn) return; if (isNative()) Haptics.notification({ type: NotificationType.Success }).catch(() => {}); else if (navigator.vibrate) navigator.vibrate([20, 60, 20, 60, 40]); },

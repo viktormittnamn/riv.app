@@ -88,6 +88,18 @@ await test('skapa block, en om dagen låser efter första lappen, ångra', async
   await ctx.close();
 });
 
+await test('snärt: snabbt drag över halvvägs river av när man släpper', async () => {
+  const { ctx, page } = await fresh();
+  const box = await page.locator('#active .tbody').boundingBox();
+  const y = box.y + 20, x0 = box.x + 12;
+  await page.mouse.move(x0, y); await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(x0 + i * 32, y);
+  await page.mouse.up();
+  await page.waitForTimeout(60);
+  assert.equal(await binding(page), '4 KVAR');
+  await ctx.close();
+});
+
 await test('tangentbord: Enter river av en lapp', async () => {
   const { ctx, page } = await fresh();
   await page.focus('#active');
