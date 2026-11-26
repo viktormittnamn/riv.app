@@ -1,7 +1,7 @@
 import './fonts.css';
 import './styles.css';
 import {
-  PAPERS, ICONS, isoWeek, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
+  PAPERS, PAPER_GROUPS, ICONS, isoWeek, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
   status, shelfOrder, stats, reminderPlan, challengeQuery, parseChallenge, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
@@ -665,8 +665,9 @@ function blockForm(b) {
     <div class="field"><span class="label">${t('style')}</span><div class="seg styles">
       ${[['lott', 'Nº07', 'styleLott'], ['affisch', '07', 'styleAffisch'], ['bio', '07▤', 'styleBio'], ['kvitto', '≡07', 'styleKvitto'], ['klipp', '●●○', 'styleKlipp'], ['boarding', '06→07', 'styleBoarding'], ['kalender', '07', 'styleKalender']]
         .map(([k, demo, lbl]) => `<button type="button" data-st="${k}"><b class="st-demo st-${k}">${demo}</b>${t(lbl)}</button>`).join('')}</div></div>
-    <div class="field"><span class="label">${t('paper')}</span><div class="swatches">
-      ${PAPERS.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`;
+    <div class="field"><span class="label">${t('paper')}</span>
+      ${Object.entries(PAPER_GROUPS).map(([g, list]) => `<div class="swatch-group"><span>${t('paperGroups')[g]}</span><div class="swatches">
+      ${list.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`).join('')}</div>`;
 }
 
 function wireForm(sh, f, onSubmit, minCount = 1) {
@@ -935,6 +936,30 @@ function applyTheme() {
 }
 darkMq.addEventListener('change', () => applyTheme()); // iOS byter till mörkt på kvällen
 
+/** Pappersstrukturer (fibrer, spalter, akvarell, korn) ritas en gång till små PNG:er och läggs som CSS-variabler */
+function makePaperTextures() {
+  const W = 220, R = Math.random, root = document.documentElement;
+  const draw = (fn) => { const c = document.createElement('canvas'); c.width = c.height = W; fn(c.getContext('2d')); return `url(${c.toDataURL('image/png')})`; };
+  // sömlöst: varje form ritas även förskjuten en hel bildbredd åt alla håll, så att skarvarna inte syns
+  const wrap = (fn) => { for (const dx of [-W, 0, W]) for (const dy of [-W, 0, W]) fn(dx, dy); };
+  const fibers = (x, n, len, col) => { for (let i = 0; i < n; i++) { const l = len[0] + R() * len[1], a = R() * Math.PI, px = R() * W, py = R() * W, bend = R() * 4, c = col(), lw = .7 + R() * .7;
+    wrap((dx, dy) => { x.strokeStyle = c; x.lineWidth = lw; x.beginPath(); x.moveTo(px + dx, py + dy); x.quadraticCurveTo(px + dx + Math.cos(a) * l / 2 + bend, py + dy + Math.sin(a) * l / 2, px + dx + Math.cos(a) * l, py + dy + Math.sin(a) * l); x.stroke(); }); } };
+  try {
+    root.style.setProperty('--tex-kraft', draw((x) => fibers(x, 900, [3, 9], () => (R() > .5 ? 'rgba(60,35,10,.22)' : 'rgba(255,240,210,.25)'))));
+    root.style.setProperty('--tex-washi', draw((x) => fibers(x, 160, [18, 50], () => 'rgba(150,130,100,.2)')));
+    root.style.setProperty('--tex-tidning', draw((x) => {
+      x.fillStyle = 'rgba(30,30,30,.06)';
+      for (let col = 0; col < 3; col++) for (let y = 6; y < W; y += 6) x.fillRect(6 + col * 72, y, 60 - R() * 14, 2);
+      for (let i = 0; i < 1500; i++) { x.fillStyle = `rgba(0,0,0,${R() * .06})`; x.fillRect(R() * W, R() * W, 1, 1); }
+    }));
+    root.style.setProperty('--tex-akvarell', draw((x) => {
+      for (let i = 0; i < 14; i++) { const cx = R() * W, cy = R() * W, r = 40 + R() * 70; wrap((dx, dy) => { const g = x.createRadialGradient(cx + dx, cy + dy, 0, cx + dx, cy + dy, r); g.addColorStop(0, 'rgba(120,170,220,.16)'); g.addColorStop(1, 'rgba(120,170,220,0)'); x.fillStyle = g; x.fillRect(0, 0, W, W); }); }
+      for (let i = 0; i < 2600; i++) { x.fillStyle = R() > .5 ? `rgba(255,255,255,${R() * .35})` : `rgba(0,0,0,${R() * .05})`; x.beginPath(); x.arc(R() * W, R() * W, R() * 1.6, 0, 7); x.fill(); }
+    }));
+    root.style.setProperty('--tex-neon', draw((x) => { for (let i = 0; i < 1800; i++) { x.fillStyle = `rgba(255,255,255,${R() * .18})`; x.fillRect(R() * W, R() * W, 1, 1); } }));
+  } catch { /* utan struktur blir pappret slätt */ }
+}
+
 function applySettings() {
   applyTheme();
   setLang(state.settings.lang);
@@ -950,6 +975,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 setInterval(checkDay, 60000);
 
 async function boot() {
+  makePaperTextures();
   // iOS släpper bara upp ljud vid touchend/click, inte pointerdown
   for (const ev of ['touchend', 'click']) document.addEventListener(ev, audio.unlock, { passive: true });
   makeNoise();

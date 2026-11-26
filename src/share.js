@@ -8,7 +8,20 @@ export const PAPER_HEX = {
   mint: { bg: '#b2e5cb', ink: '#0f3a28', muted: '#3e7058', stamp: '#0b6a43', hole: '#6fb08f' },
   himmel: { bg: '#b8d4f1', ink: '#10284a', muted: '#42608a', stamp: '#1b4db0', hole: '#7b9fcb' },
   kvitto: { bg: '#fbfbf7', ink: '#17171a', muted: '#6c6c75', stamp: '#17171a', hole: '#b9b9bf' },
-  kol: { bg: '#29282e', ink: '#f3eee4', muted: '#a29d92', stamp: '#e8c27c', hole: '#55525c' }
+  kol: { bg: '#29282e', ink: '#f3eee4', muted: '#a29d92', stamp: '#e8c27c', hole: '#55525c' },
+  kraft: { bg: '#c9a57a', ink: '#2e1f0f', muted: '#5f4528', stamp: '#7a2e12', hole: '#8a6a45' },
+  tidning: { bg: '#e6e2d6', ink: '#1d1c19', muted: '#6b675c', stamp: '#b02a1e', hole: '#a9a497' },
+  washi: { bg: '#f3eee2', ink: '#2b2620', muted: '#8b8274', stamp: '#b5452e', hole: '#c9bfae' },
+  akvarell: { bg: '#f6f2ea', ink: '#1f3a57', muted: '#5b7690', stamp: '#2c5d91', hole: '#a9b8c6' },
+  kalker: { bg: '#f4f4f0', ink: '#1b1a21', muted: '#5d5b66', stamp: '#1b1a21', hole: '#9c9aa4' },
+  rutat: { bg: '#fbfbf8', ink: '#1b2a4a', muted: '#5a6b8c', stamp: '#2b4fa0', hole: '#b4c0d8' },
+  linjerat: { bg: '#fdfcf6', ink: '#1b1a21', muted: '#6b6a72', stamp: '#c83c3c', hole: '#c4c2ba' },
+  mm: { bg: '#f4f8f0', ink: '#173b22', muted: '#4f7a5a', stamp: '#1f7a43', hole: '#a9c7b0' },
+  sakerhet: { bg: '#d9ecdf', ink: '#123d2a', muted: '#3d6b55', stamp: '#0b6a43', hole: '#8fbba2' },
+  randigt: { bg: '#f7f3ec', ink: '#4a1426', muted: '#8c4a5d', stamp: '#c01f48', hole: '#d6a3b0' },
+  neongul: { bg: '#e9ff3a', ink: '#1d2200', muted: '#59650a', stamp: '#3a4300', hole: '#b0c21e' },
+  neonorange: { bg: '#ff7a45', ink: '#2a0d00', muted: '#7a2a07', stamp: '#2a0d00', hole: '#d65a2a' },
+  guld: { bg: '#1c1b1f', ink: '#e0bd73', muted: '#9c8a62', stamp: '#e0bd73', hole: '#4a4436' }
 };
 
 const DISPLAY = '"Big Shoulders Display", Impact, "Arial Narrow", sans-serif';

@@ -27,8 +27,8 @@ TVÅ TEMPON
 TOMT BLOCK = KLART
 Kartongen som blir kvar visar alla lappar med datum och dina anteckningar. Dela en snygg bild när du är klar.
 
-SEX PAPPER
-Rosa, Smör, Mint, Himmel, Kvitto och Kol.
+19 PAPPER OCH 7 LAPPSTILAR
+Från rosa och mint till kraftpapper, rutat, neon och svart med guld. Välj lott, affisch, biobiljett, kvitto, klippkort, boardingkort eller kalenderblad.
 
 DITT, BARA DITT
 Inget konto, ingen reklam, ingen spårning. Allt sparas på telefonen. Betala en gång, behåll den för alltid.
@@ -58,8 +58,8 @@ TWO PACES
 EMPTY PAD = DONE
 The board left behind shows every ticket with its date and your notes. Share a clean image when you finish.
 
-SIX PAPERS
-Pink, Butter, Mint, Sky, Receipt and Coal.
+19 PAPERS AND 7 TICKET STYLES
+From pink and mint to kraft, grid, neon and black with gold. Pick raffle, poster, cinema, receipt, punch card, boarding pass or calendar page.
 
 YOURS, ONLY YOURS
 No account, no ads, no tracking. Everything stays on your phone. Pay once, keep it forever.

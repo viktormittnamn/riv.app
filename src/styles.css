@@ -517,3 +517,39 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .styles button { height: 40px; padding: 0 10px; gap: 6px; font-size: 13px; }
 .st-demo { font-size: 16px; }
 .st-kalender.st-demo { color: #c8312a; }
+
+/* ---------- Nya papper: material, mönster, effekter ----------
+   Strukturen ligger i --p-tex (gradienter, eller en canvas-bild som ritas vid start: --tex-*) */
+[data-paper] { --p-tex: none; --p-tex-size: auto; }
+[data-paper="kraft"]      { --p-bg: #c9a57a; --p-bg2: #b8946a; --p-ink: #2e1f0f; --p-muted: #5f4528; --p-line: rgba(46,31,15,.22); --p-hole: #8a6a45; --p-stamp: #7a2e12; --p-tex: var(--tex-kraft, none); --p-tex-size: 220px; --p-noise-op: .22; }
+[data-paper="tidning"]    { --p-bg: #e6e2d6; --p-bg2: #d9d4c6; --p-ink: #1d1c19; --p-muted: #6b675c; --p-line: rgba(29,28,25,.18); --p-hole: #a9a497; --p-stamp: #b02a1e; --p-tex: var(--tex-tidning, none); --p-tex-size: 220px; }
+[data-paper="washi"]      { --p-bg: #f3eee2; --p-bg2: #e8e1d1; --p-ink: #2b2620; --p-muted: #8b8274; --p-line: rgba(43,38,32,.16); --p-hole: #c9bfae; --p-stamp: #b5452e; --p-tex: var(--tex-washi, none); --p-tex-size: 220px; --p-noise-op: .06; }
+[data-paper="akvarell"]   { --p-bg: #f6f2ea; --p-bg2: #ece6da; --p-ink: #1f3a57; --p-muted: #5b7690; --p-line: rgba(31,58,87,.18); --p-hole: #a9b8c6; --p-stamp: #2c5d91; --p-tex: var(--tex-akvarell, none); --p-tex-size: 220px; }
+[data-paper="kalker"]     { --p-bg: rgba(250,250,246,.86); --p-bg2: rgba(236,236,230,.9); --p-ink: #1b1a21; --p-muted: #5d5b66; --p-line: rgba(27,26,33,.18); --p-hole: #9c9aa4; --p-stamp: #1b1a21; --p-noise-op: .05; }
+[data-paper="rutat"]      { --p-bg: #fbfbf8; --p-bg2: #efefea; --p-ink: #1b2a4a; --p-muted: #5a6b8c; --p-line: rgba(27,42,74,.18); --p-hole: #b4c0d8; --p-stamp: #2b4fa0; --p-noise-op: .06;
+  --p-tex: linear-gradient(rgba(70,110,190,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(70,110,190,.18) 1px, transparent 1px); --p-tex-size: 14px 14px; }
+[data-paper="linjerat"]   { --p-bg: #fdfcf6; --p-bg2: #f1efe6; --p-ink: #1b1a21; --p-muted: #6b6a72; --p-line: rgba(27,26,33,.16); --p-hole: #c4c2ba; --p-stamp: #c83c3c; --p-noise-op: .06;
+  --p-tex: linear-gradient(90deg, transparent 26px, rgba(220,60,60,.5) 26px, rgba(220,60,60,.5) 27.5px, transparent 27.5px), repeating-linear-gradient(transparent 0 19px, rgba(70,120,200,.26) 19px 20px); --p-tex-size: auto; }
+[data-paper="mm"]         { --p-bg: #f4f8f0; --p-bg2: #e7efe1; --p-ink: #173b22; --p-muted: #4f7a5a; --p-line: rgba(23,59,34,.18); --p-hole: #a9c7b0; --p-stamp: #1f7a43; --p-noise-op: .06;
+  --p-tex: linear-gradient(rgba(40,140,80,.28) 1px, transparent 1px), linear-gradient(90deg, rgba(40,140,80,.28) 1px, transparent 1px), linear-gradient(rgba(40,140,80,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(40,140,80,.1) 1px, transparent 1px); --p-tex-size: 35px 35px, 35px 35px, 7px 7px, 7px 7px; }
+[data-paper="sakerhet"]   { --p-bg: #d9ecdf; --p-bg2: #c8e1d0; --p-ink: #123d2a; --p-muted: #3d6b55; --p-line: rgba(18,61,42,.18); --p-hole: #8fbba2; --p-stamp: #0b6a43;
+  --p-tex: repeating-radial-gradient(circle at 0 0, transparent 0 8px, rgba(18,61,42,.09) 8px 9px), repeating-radial-gradient(circle at 100% 100%, transparent 0 8px, rgba(18,61,42,.09) 8px 9px); --p-tex-size: auto; }
+[data-paper="randigt"]    { --p-bg: #f7f3ec; --p-bg2: #ece5da; --p-ink: #4a1426; --p-muted: #8c4a5d; --p-line: rgba(74,20,38,.18); --p-hole: #d6a3b0; --p-stamp: #c01f48;
+  --p-tex: repeating-linear-gradient(90deg, rgba(225,90,120,.16) 0 12px, transparent 12px 24px); --p-tex-size: auto; }
+[data-paper="neongul"]    { --p-bg: #e9ff3a; --p-bg2: #d9f02a; --p-ink: #1d2200; --p-muted: #59650a; --p-line: rgba(29,34,0,.2); --p-hole: #b0c21e; --p-stamp: #3a4300; --p-tex: var(--tex-neon, none); --p-tex-size: 220px; --p-noise-op: .08; }
+[data-paper="neonorange"] { --p-bg: #ff7a45; --p-bg2: #f2683a; --p-ink: #2a0d00; --p-muted: #7a2a07; --p-line: rgba(42,13,0,.2); --p-hole: #d65a2a; --p-stamp: #2a0d00; --p-tex: var(--tex-neon, none); --p-tex-size: 220px; --p-noise-op: .08; }
+[data-paper="guld"]       { --p-bg: #1c1b1f; --p-bg2: #141316; --p-ink: #e0bd73; --p-muted: #9c8a62; --p-line: rgba(224,189,115,.2); --p-hole: #4a4436; --p-stamp: #e0bd73; --p-blend: screen; --p-noise-op: .1; }
+/* guldtryckt nummer */
+[data-paper="guld"] .bignum, [data-paper="guld"] .mini .num { background: linear-gradient(170deg, #f8e2a6, #c79a45 45%, #f3d58b 60%, #a6782f); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* kalkerpapper: man ser lappen under, lite suddigt */
+[data-paper="kalker"] .ticket.active .tbody { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+
+/* strukturen läggs ovanpå papperets färg överallt där pappret syns */
+.tbody { background-image: var(--p-tex), linear-gradient(176deg, var(--p-bg) 0%, var(--p-bg2) 140%); background-size: var(--p-tex-size), auto; background-color: transparent; }
+.stub, .stack-sheet, .mini .face, .done-card .tag, .stubs .s, .swatches i, .tile-pad .face, .cal-g .hit { background-image: var(--p-tex); background-size: var(--p-tex-size); }
+.stub { background-color: var(--p-bg2); }
+
+/* pappersval i grupper */
+.swatch-group { display: grid; gap: 6px; }
+.swatch-group + .swatch-group { margin-top: 6px; }
+.swatch-group > span { font: 500 9.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }

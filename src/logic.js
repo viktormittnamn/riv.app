@@ -1,6 +1,12 @@
 // Ren logik utan DOM — allt här är enhetstestat (tests/logic.test.js)
 
-export const PAPERS = ['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'];
+export const PAPER_GROUPS = {
+  colors: ['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'],
+  material: ['kraft', 'tidning', 'washi', 'akvarell', 'kalker'],
+  pattern: ['rutat', 'linjerat', 'mm', 'sakerhet', 'randigt'],
+  effect: ['neongul', 'neonorange', 'guld']
+};
+export const PAPERS = Object.values(PAPER_GROUPS).flat();
 export const STYLES = ['lott', 'affisch', 'bio', 'kvitto', 'klipp', 'boarding', 'kalender'];
 export const FREE_PAPERS = ['rosa', 'mint', 'kvitto'];
 export const MAX_TOTAL = 100;

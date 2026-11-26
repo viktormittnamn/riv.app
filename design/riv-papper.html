@@ -1,0 +1,148 @@
+<title>Riv papper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@96,75,800&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Big+Shoulders+Display:wght@900&display=swap">
+<style>
+/* Layout: tre grupper (material, mönster, effekter); varje papper som en Lott-lapp i ett rutnät, med namn och en rad om känslan. */
+:root {
+  --bg: #e9e8ee; --surface: #f7f6fa; --ink: #1b1a21; --muted: #64626f; --line: rgba(27,26,33,.12);
+  --board: #a9a39a; --board-2: #958f86;
+  --f-num: 'Bricolage Grotesque', 'Arial Narrow', sans-serif;
+  --f-body: 'Instrument Sans', -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --f-display: 'Big Shoulders Display', Impact, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); --board: #3b3935; --board-2: #2e2c29; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); --board: #3b3935; --board-2: #2e2c29; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+h1 { font: 900 clamp(44px, 8vw, 80px)/.9 var(--f-display); text-transform: uppercase; margin: 0 0 10px; }
+h2 { font: 900 34px/1 var(--f-display); text-transform: uppercase; margin: 44px 0 6px; }
+.lead, .sub { color: var(--muted); max-width: 62ch; margin: 0 0 14px; }
+.label { font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 28px 18px; }
+figure { margin: 0; display: grid; gap: 10px; }
+figcaption b { display: block; font: 700 17px var(--f-body); }
+figcaption span { color: var(--muted); font-size: 14px; }
+
+/* Blocket i mindre skala (samma delar som i appen) */
+.pad { position: relative; width: 100%; max-width: 250px; aspect-ratio: 250 / 340; margin: 10px auto 6px; }
+.pad .board { position: absolute; inset: -6px -6px -9px; border-radius: 16px; background: linear-gradient(165deg, var(--board), var(--board-2)); box-shadow: 0 20px 34px -16px rgba(20,16,10,.35); }
+.pad .binding { position: absolute; top: -6px; left: -6px; right: -6px; height: 24px; border-radius: 16px 16px 0 0; background: #1b1a21; color: #e9e6df; display: grid; place-items: center; font: 500 8.5px var(--f-mono); letter-spacing: .2em; z-index: 3; }
+.pad .sheet { position: absolute; left: 2px; right: 2px; top: 20px; bottom: -4px; border-radius: 3px 3px 11px 11px; }
+.t { position: absolute; left: 0; right: 0; top: 18px; bottom: 0; color: var(--p-ink); }
+.stub { position: relative; height: 34px; border-radius: 3px 3px 0 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 12px 7px; font: 500 8px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--p-muted); }
+.perf { position: relative; height: 16px; margin: -8px 0; z-index: 2; }
+.perf::before { content: ""; position: absolute; left: 10px; right: 10px; top: 7px; height: 2px; background: repeating-linear-gradient(90deg, var(--p-hole) 0 3px, transparent 3px 7px); }
+.perf i { position: absolute; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--board-2); }
+.perf i:first-child { left: -6px; } .perf i:last-child { right: -6px; }
+.body { position: relative; height: calc(100% - 34px); border-radius: 0 0 11px 11px; overflow: hidden; padding: 9px; }
+.frame { position: relative; z-index: 1; height: 100%; border: 3px double var(--p-ink); border-radius: 10px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px; gap: 4px; }
+.no { width: 100%; display: flex; justify-content: space-between; font: 500 8px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+.big { font: 800 92px/.8 var(--f-num); font-stretch: 75%; margin: 12px 0 4px; position: relative; color: var(--p-num, var(--p-ink)); }
+.big sup { position: absolute; top: 2px; left: -18px; font: 700 13px var(--f-body); }
+.title { font: 700 14px var(--f-body); }
+.pips { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 160px; margin-top: auto; }
+.pips i { width: 5px; height: 5px; border-radius: 50%; border: 1px solid var(--p-ink); opacity: .45; }
+.pips i.on { background: var(--p-ink); opacity: 1; }
+
+/* Ytan på varje papper: stubbe, lapp och arken under delar samma bakgrund */
+.surf { background-color: var(--p-bg); background-image: var(--p-tex, none); background-size: var(--p-tex-size, auto); }
+.sheet.surf { filter: brightness(.93); }
+
+/* ---- Papper ---- */
+/* Material */
+[data-p="kraft"]    { --p-bg: #c9a57a; --p-ink: #2e1f0f; --p-muted: #5f4528; --p-hole: #8a6a45; }
+[data-p="tidning"]  { --p-bg: #e6e2d6; --p-ink: #1d1c19; --p-muted: #6b675c; --p-hole: #a9a497; }
+[data-p="washi"]    { --p-bg: #f3eee2; --p-ink: #2b2620; --p-muted: #8b8274; --p-hole: #c9bfae; }
+[data-p="akvarell"] { --p-bg: #f6f2ea; --p-ink: #1f3a57; --p-muted: #5b7690; --p-hole: #a9b8c6; }
+[data-p="kalker"]   { --p-bg: rgba(250,250,246,.8); --p-ink: #1b1a21; --p-muted: #5d5b66; --p-hole: #9c9aa4; }
+/* Mönster */
+[data-p="rutat"]    { --p-bg: #fbfbf8; --p-ink: #1b2a4a; --p-muted: #5a6b8c; --p-hole: #b4c0d8; --p-tex: linear-gradient(rgba(70,110,190,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(70,110,190,.18) 1px, transparent 1px); --p-tex-size: 12px 12px; }
+[data-p="linjerat"] { --p-bg: #fdfcf6; --p-ink: #1b1a21; --p-muted: #6b6a72; --p-hole: #c4c2ba; --p-tex: linear-gradient(90deg, transparent 22px, rgba(220,60,60,.5) 22px, rgba(220,60,60,.5) 23.5px, transparent 23.5px), repeating-linear-gradient(transparent 0 15px, rgba(70,120,200,.28) 15px 16px); }
+[data-p="mm"]       { --p-bg: #f4f8f0; --p-ink: #173b22; --p-muted: #4f7a5a; --p-hole: #a9c7b0; --p-tex: linear-gradient(rgba(40,140,80,.28) 1px, transparent 1px), linear-gradient(90deg, rgba(40,140,80,.28) 1px, transparent 1px), linear-gradient(rgba(40,140,80,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(40,140,80,.1) 1px, transparent 1px); --p-tex-size: 30px 30px, 30px 30px, 6px 6px, 6px 6px; }
+[data-p="sakerhet"] { --p-bg: #d9ecdf; --p-ink: #123d2a; --p-muted: #3d6b55; --p-hole: #8fbba2; --p-tex: repeating-radial-gradient(circle at 0 0, transparent 0 7px, rgba(18,61,42,.09) 7px 8px), repeating-radial-gradient(circle at 100% 100%, transparent 0 7px, rgba(18,61,42,.09) 7px 8px); }
+[data-p="randigt"]  { --p-bg: #f7f3ec; --p-ink: #4a1426; --p-muted: #8c4a5d; --p-hole: #d6a3b0; --p-tex: repeating-linear-gradient(90deg, rgba(225,90,120,.16) 0 10px, transparent 10px 20px); }
+/* Effekter */
+[data-p="neongul"]  { --p-bg: #e9ff3a; --p-ink: #1d2200; --p-muted: #59650a; --p-hole: #b0c21e; }
+[data-p="neonorange"] { --p-bg: #ff7a45; --p-ink: #2a0d00; --p-muted: #7a2a07; --p-hole: #d65a2a; }
+[data-p="holo"]     { --p-bg: #e9e6f2; --p-ink: #1d1b2c; --p-muted: #5a5770; --p-hole: #b9b5cc; --p-tex: linear-gradient(115deg, rgba(255,150,200,.45), rgba(150,220,255,.45) 30%, rgba(190,255,200,.45) 55%, rgba(255,240,150,.45) 75%, rgba(220,170,255,.45)); }
+[data-p="guld"]     { --p-bg: #1c1b1f; --p-ink: #e0bd73; --p-muted: #9c8a62; --p-hole: #4a4436; --p-num: transparent; }
+[data-p="guld"] .big { background: linear-gradient(170deg, #f8e2a6, #c79a45 45%, #f3d58b 60%, #a6782f); -webkit-background-clip: text; background-clip: text; }
+[data-p="kalker"] .surf { -webkit-backdrop-filter: blur(1.5px); backdrop-filter: blur(1.5px); }
+[data-p="kalker"] .sheet { background: #f7bccb; filter: none; }
+</style>
+
+<div class="wrap">
+  <span class="label">Riv · papper</span>
+  <h1>Nya papper</h1>
+  <p class="lead">Alla papper visas som en Lott-lapp så att det bara är pappret som skiljer. Strukturerna ritas i appen, inga bildfiler. Välj gärna flera: de nya läggs till bredvid Rosa, Smör, Mint, Himmel, Kvitto och Kol.</p>
+
+  <h2>Material</h2><p class="sub">Papper man känner igen med fingrarna: fibrer, grå tidningston, akvarellstruktur, och kalkerpapper som man ser nästa lapp igenom.</p>
+  <div class="grid" id="g1"></div>
+  <h2>Mönster</h2><p class="sub">Tryck på pappret. Från skolan och kontoret, och säkerhetsmönstret från riktiga biljetter och sedlar.</p>
+  <div class="grid" id="g2"></div>
+  <h2>Effekter</h2><p class="sub">Starka färger och glans. Neon som på riktiga lottlappar, holografiskt och svart med guldtryck.</p>
+  <div class="grid" id="g3"></div>
+</div>
+
+<script>
+// Fiber- och strukturbilder ritas en gång på canvas (samma teknik som appen kan använda)
+function tex(kind, w = 220, h = 220) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
+  const R = Math.random;
+  if (kind === 'kraft' || kind === 'washi') {
+    const n = kind === 'kraft' ? 900 : 160;
+    for (let i = 0; i < n; i++) {
+      const len = kind === 'kraft' ? 3 + R() * 9 : 18 + R() * 50, a = R() * Math.PI;
+      x.strokeStyle = kind === 'kraft' ? (R() > .5 ? 'rgba(60,35,10,.22)' : 'rgba(255,240,210,.25)') : 'rgba(150,130,100,.22)';
+      x.lineWidth = kind === 'kraft' ? .8 + R() : .6; const px = R() * w, py = R() * h;
+      x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + Math.cos(a) * len / 2 + R() * 4, py + Math.sin(a) * len / 2, px + Math.cos(a) * len, py + Math.sin(a) * len); x.stroke();
+    }
+  }
+  if (kind === 'tidning') {
+    x.fillStyle = 'rgba(30,30,30,.06)';
+    for (let col = 0; col < 3; col++) for (let y = 6; y < h; y += 6) { const wd = 60 - R() * 14; x.fillRect(6 + col * 72, y, wd, 2); }
+    for (let i = 0; i < 1500; i++) { x.fillStyle = `rgba(0,0,0,${R() * .06})`; x.fillRect(R() * w, R() * h, 1, 1); }
+  }
+  if (kind === 'akvarell') {
+    for (let i = 0; i < 14; i++) { const cx = R() * w, cy = R() * h, g = x.createRadialGradient(cx, cy, 0, cx, cy, 40 + R() * 70); g.addColorStop(0, 'rgba(120,170,220,.16)'); g.addColorStop(1, 'rgba(120,170,220,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); }
+    for (let i = 0; i < 2600; i++) { const v = R(); x.fillStyle = v > .5 ? `rgba(255,255,255,${R() * .35})` : `rgba(0,0,0,${R() * .05})`; x.beginPath(); x.arc(R() * w, R() * h, R() * 1.6, 0, 7); x.fill(); }
+  }
+  if (kind === 'neongul' || kind === 'neonorange') { for (let i = 0; i < 1800; i++) { x.fillStyle = `rgba(255,255,255,${R() * .18})`; x.fillRect(R() * w, R() * h, 1, 1); } }
+  if (kind === 'guld') { for (let i = 0; i < 2200; i++) { x.fillStyle = `rgba(255,255,255,${R() * .05})`; x.fillRect(R() * w, R() * h, 1, 1); } }
+  return `url(${c.toDataURL()})`;
+}
+
+const P = {
+  g1: [['kraft', 'Kraftpapper', 'Brunt och fibrigt som en påse från skafferiet. Varmt och naturligt.'],
+       ['tidning', 'Tidningspapper', 'Gråvitt med en skymt av spalter. Lite retro, lätt att läsa.'],
+       ['washi', 'Washi', 'Japanskt papper med långa, mjuka fibrer. Lugnt och exklusivt.'],
+       ['akvarell', 'Akvarell', 'Grov yta med mjuka blå fläckar, som ett skissblock.'],
+       ['kalker', 'Kalkerpapper', 'Halvgenomskinligt: du ser nästa lapp skymta igenom.']],
+  g2: [['rutat', 'Rutat', 'Matteboken. Rutorna gör att lappen känns som en anteckning.'],
+       ['linjerat', 'Linjerat', 'Skrivblock med röd marginal. Passar bra för anteckningarna.'],
+       ['mm', 'Millimeterpapper', 'Grönt ingenjörspapper. Exakt och lite nördigt.'],
+       ['sakerhet', 'Säkerhetsmönster', 'Fina böljande linjer som på biljetter och sedlar. Ser äkta ut.'],
+       ['randigt', 'Randigt', 'Breda ränder som en gammal biobiljett eller ett godispapper.']],
+  g3: [['neongul', 'Neongul', 'Lysande gult som en lottlapp på tivoli. Syns på långt håll.'],
+       ['neonorange', 'Neonorange', 'Varmt och skrikigt, som en parkeringslapp man inte kan missa.'],
+       ['holo', 'Holografisk', 'Regnbågsglans. I appen kan den skifta när man lutar telefonen.'],
+       ['guld', 'Svart med guld', 'Tung svart kartong och guldtryckt nummer. Mest premium.']]
+};
+const TEX = { kraft: 1, tidning: 1, washi: 1, akvarell: 1, neongul: 1, neonorange: 1, guld: 1 };
+const lapp = (k) => `<div class="pad" data-p="${k}"><div class="board"></div><div class="binding">24 KVAR</div><div class="sheet surf"></div>
+  <div class="t"><div class="stub surf"><span>Kalla bad</span><span>RB-K7QD</span></div><div class="perf"><i></i><i></i></div>
+  <div class="body surf"><div class="frame"><div class="no"><span>Lapp nr</span><span>Idag 26 nov</span></div>
+    <div class="big"><sup>Nº</sup>07</div><div class="title">🧊 Kalla bad</div>
+    <div class="pips">${Array.from({ length: 30 }, (_, i) => `<i class="${i < 6 ? 'on' : ''}"></i>`).join('')}</div></div></div></div></div>`;
+for (const [g, list] of Object.entries(P)) {
+  document.getElementById(g).innerHTML = list.map(([k, n, d]) => `<figure>${lapp(k)}<figcaption><b>${n}</b><span>${d}</span></figcaption></figure>`).join('');
+}
+for (const k of Object.keys(TEX)) {
+  const url = tex(k);
+  document.querySelectorAll(`[data-p="${k}"]`).forEach((el) => { el.style.setProperty('--p-tex', url); el.style.setProperty('--p-tex-size', '220px 220px'); });
+}
+</script>

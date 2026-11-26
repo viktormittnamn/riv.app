@@ -50,7 +50,16 @@ const PAPER = {
   mint: { rate: 1.1, hp: 320, lp: 10000, g: 0.85 },
   himmel: { rate: 0.94, hp: 200, lp: 7000, g: 0.95 },
   kvitto: { rate: 1.38, hp: 1100, lp: 14000, g: 0.75 }, // tunt termopapper: ljust och vasst
-  kol: { rate: 0.7, hp: 90, lp: 2600, g: 1.25 } // tjock kartong: mörkt och dovt
+  kol: { rate: 0.7, hp: 90, lp: 2600, g: 1.25 }, // tjock kartong: mörkt och dovt
+  kraft: { rate: 0.82, hp: 120, lp: 4200, g: 1.15 },
+  tidning: { rate: 1.12, hp: 400, lp: 9000, g: 0.8 },
+  washi: { rate: 1.22, hp: 600, lp: 7000, g: 0.65 }, // mjukt och tyst
+  akvarell: { rate: 0.9, hp: 160, lp: 5200, g: 1.05 },
+  kalker: { rate: 1.5, hp: 1400, lp: 15000, g: 0.7 }, // tunt och prasslande
+  rutat: { rate: 1.05, hp: 300, lp: 9000, g: 0.9 }, linjerat: { rate: 1.05, hp: 300, lp: 9000, g: 0.9 }, mm: { rate: 1.08, hp: 320, lp: 9500, g: 0.88 },
+  sakerhet: { rate: 0.95, hp: 220, lp: 7500, g: 1 }, randigt: { rate: 1, hp: 260, lp: 8500, g: 0.95 },
+  neongul: { rate: 1.1, hp: 300, lp: 10000, g: 0.9 }, neonorange: { rate: 1.1, hp: 300, lp: 10000, g: 0.9 },
+  guld: { rate: 0.66, hp: 80, lp: 2400, g: 1.3 } // tung svart kartong
 };
 
 /** Spela en bit av inspelningen [from, from+len] genom papprets filter */
