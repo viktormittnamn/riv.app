@@ -202,3 +202,13 @@ describe('lappstil', () => {
     expect(mg4({ blocks: [{ title: 'x', total: 3, style: 'evil' }] }).blocks[0].style).toBe('lott');
   });
 });
+
+import { isoWeek, STYLES as ST } from '../src/logic.js';
+describe('veckonummer och stilar', () => {
+  it('ISO-vecka stämmer vid årsskiften', () => {
+    expect(isoWeek(new Date(2026, 10, 26))).toBe(48);
+    expect(isoWeek(new Date(2027, 0, 1))).toBe(53);
+    expect(isoWeek(new Date(2026, 0, 1))).toBe(1);
+  });
+  it('sju lappstilar', () => { expect(ST.length).toBe(7); });
+});

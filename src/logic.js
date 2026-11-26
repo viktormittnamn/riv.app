@@ -1,7 +1,7 @@
 // Ren logik utan DOM — allt här är enhetstestat (tests/logic.test.js)
 
 export const PAPERS = ['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'];
-export const STYLES = ['lott', 'affisch'];
+export const STYLES = ['lott', 'affisch', 'bio', 'kvitto', 'klipp', 'boarding', 'kalender'];
 export const FREE_PAPERS = ['rosa', 'mint', 'kvitto'];
 export const MAX_TOTAL = 100;
 export const ICONS = ['🏃', '💪', '🧘', '🚶', '🚴', '🏊', '🧊', '📚', '✍️', '🎸', '💧', '🥦', '🍬', '🍷', '☕', '😴', '📵', '🧹', '💸', '❤️'];
@@ -29,6 +29,15 @@ export function dayDiff(a, b) {
 }
 
 export const pad2 = (n) => String(n).padStart(2, '0');
+
+/** ISO-veckonummer (måndag först, vecka 1 innehåller årets första torsdag) */
+export function isoWeek(d = new Date()) {
+  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = x.getUTCDay() || 7;
+  x.setUTCDate(x.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(x.getUTCFullYear(), 0, 1));
+  return Math.ceil(((x - y0) / 86400000 + 1) / 7);
+}
 
 export function clampTotal(n) {
   const v = Math.round(Number(n));

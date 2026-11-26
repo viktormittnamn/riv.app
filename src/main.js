@@ -1,7 +1,7 @@
 import './fonts.css';
 import './styles.css';
 import {
-  PAPERS, ICONS, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
+  PAPERS, ICONS, isoWeek, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
   status, shelfOrder, stats, reminderPlan, challengeQuery, parseChallenge, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
@@ -312,6 +312,45 @@ function ticketHTML(b, n, kind, locked) {
       <div class="af-big bignum">${pad2(n)}</div>
       <div class="af-of">${n} / ${b.total}</div>${progress(b, n, 'af-ticks')}
       ${note}</div>`;
+  // Datumet lappen gäller: idag, eller imorgon om dagens redan är riven / nästa i en om dagen
+  const when = new Date(); if (locked || (kind !== 'active' && b.pace === 'daily')) when.setDate(when.getDate() + 1);
+  const left = b.total - n + 1, stamp = `<span class="stamp">${t('tearOff')}</span>`, serial = `<span class="serial">RB-${b.id}-${pad2(n)}</span>`;
+  const bar = '<div class="barcode"></div>', pace = b.pace === 'daily' ? t('paceDaily') : t('paceFree');
+  if (b.style === 'bio') return stub + `<div class="tbody st-bio">${stampBig}<div class="bi-frame">
+      <div class="t-row"><span>RIV</span><span>${t('admitOne')}</span></div>
+      <div class="bi-mid"><div class="bignum">${pad2(n)}</div>
+        <dl><div><dt>${t('lblBlock')}</dt><dd class="t-title">${ico}${esc(b.title)}</dd></div><div><dt>${t('lblTicket')}</dt><dd>${t('ofTotal', n, b.total)}</dd></div>
+        <div><dt>${t('lblDate')}</dt><dd>${fmtDate(when)}</dd></div><div><dt>${t('lblPace')}</dt><dd>${pace}</dd></div></dl></div>${lead}
+      ${note}<div class="bi-foot"><div>${bar}${serial}</div>${stamp}</div></div></div>`;
+  if (b.style === 'kvitto') return stub + `<div class="tbody st-kvitto">${stampBig}
+      <div class="kv-logo">RIV</div><div class="kv-center t-title">${ico}${esc(b.title)}</div><hr>
+      <div class="kv-li"><span>${t('lblTicket')}</span><i></i><b>${pad2(n)} / ${b.total}</b></div>
+      <div class="kv-li"><span>${t('lblDate')}</span><i></i><b>${fmtDate(when, true)}</b></div>
+      <div class="kv-li"><span>${t('lblPace')}</span><i></i><b>${pace}</b></div>
+      <div class="kv-li"><span>${t('lblLeftAfter')}</span><i></i><b>${b.total - n}</b></div><hr>
+      <div class="kv-li kv-tot"><span>${t('total')}</span><i></i><span class="bignum">${pad2(n)}</span></div><hr>${lead}
+      ${note}<div class="kv-thanks t-row">${t('thanks')}</div><div class="kv-end">${bar}${stamp}</div></div>`;
+  if (b.style === 'klipp') {
+    const cols = b.total <= 30 ? 6 : b.total <= 60 ? 10 : 12;
+    const dots = Array.from({ length: b.total }, (_, i) => `<i class="${i < n - 1 ? 'hole' : i === n - 1 ? 'now' : ''}">${i === n - 1 && b.total <= 30 ? pad2(n) : ''}</i>`).join('');
+    return stub + `<div class="tbody st-klipp">${stampBig}
+      <div class="kl-hd"><b class="t-title">${ico}${esc(b.title)}</b><span class="t-row">${fmtDate(when)}</span></div>
+      <div class="kl-grid${b.total > 30 ? ' small' : ''}" style="grid-template-columns:repeat(${cols},1fr)" aria-hidden="true">${dots}</div>${lead}
+      <div class="kl-count"><span class="t-row">${t('punch', n, b.total)}</span><span class="bignum">${pad2(n)}</span></div>
+      ${note}<div class="kl-end">${stamp}</div></div>`;
+  }
+  if (b.style === 'boarding') return stub + `<div class="tbody st-boarding">${stampBig}
+      <div class="t-row"><span>RIV · Boarding</span><span>${fmtDate(when)}</span></div>
+      <div class="bo-route"><div><small>${t('lblFrom')}</small><span class="bignum">${pad2(n - 1)}</span></div><span class="bo-arr">✈︎</span><div class="bo-to"><small>${t('lblTo')}</small><span class="bignum">${pad2(n)}</span></div></div>
+      <div class="bo-cells"><div><small>${t('lblBlock')}</small><b class="t-title">${ico}${esc(b.title)}</b></div><div><small>${t('lblPace')}</small><b>${pace}</b></div>
+        <div><small>${t('lblLeft')}</small><b>${t('leftN', left - 1)}</b></div><div><small>${t('lblSeat')}</small><b>${t('ofTotal', n, b.total)}</b></div></div>${lead}
+      ${note}<div class="bo-foot">${bar}${stamp}</div></div>`;
+  if (b.style === 'kalender') return stub + `<div class="tbody st-kalender">${stampBig}
+      <div class="ka-mon">${t('monthsLong')[when.getMonth()]} ${when.getFullYear()}</div>
+      <div class="bignum ka-day">${pad2(n)}</div><div class="ka-wd">${t('weekdaysLong')[when.getDay()]}</div>
+      <div class="t-row ka-wk">${t('week', isoWeek(when))} · ${t('lblTicket')} ${n} / ${b.total}</div>
+      <div class="ka-what t-title">${ico}${esc(b.title)}</div>${lead}
+      <div class="ka-bottom">${note}<div class="ka-end">${stamp}</div></div></div>`;
   // Lott (standard)
   return stub + `<div class="tbody st-lott">${stampBig}<div class="lt-frame">
       <div class="t-row lt-no"><span>${t('ticketNo')}</span><span>${dateLbl}</span></div>
@@ -624,7 +663,8 @@ function blockForm(b) {
     <div class="field"><span class="label">${t('icon')}</span><div class="icons">
       <button type="button" data-ic="" aria-label="${t('noIcon')}">–</button>${ICONS.map((x) => `<button type="button" data-ic="${x}">${x}</button>`).join('')}</div></div>
     <div class="field"><span class="label">${t('style')}</span><div class="seg styles">
-      <button type="button" data-st="lott"><b class="st-demo st-l">Nº07</b>${t('styleLott')}</button><button type="button" data-st="affisch"><b class="st-demo st-a">07</b>${t('styleAffisch')}</button></div></div>
+      ${[['lott', 'Nº07', 'styleLott'], ['affisch', '07', 'styleAffisch'], ['bio', '07▤', 'styleBio'], ['kvitto', '≡07', 'styleKvitto'], ['klipp', '●●○', 'styleKlipp'], ['boarding', '06→07', 'styleBoarding'], ['kalender', '07', 'styleKalender']]
+        .map(([k, demo, lbl]) => `<button type="button" data-st="${k}"><b class="st-demo st-${k}">${demo}</b>${t(lbl)}</button>`).join('')}</div></div>
     <div class="field"><span class="label">${t('paper')}</span><div class="swatches">
       ${PAPERS.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`;
 }

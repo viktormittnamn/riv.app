@@ -440,6 +440,19 @@ await test('lappstil: Lott som standard, Affisch går att välja och ändra', as
   await ctx.close();
 });
 
+await test('alla sju lappstilar går att riva', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  for (const st of ['lott', 'affisch', 'bio', 'kvitto', 'klipp', 'boarding', 'kalender']) {
+    await page.click('#newBtn'); await page.fill('#cTitle', 'Test ' + st); await page.click('[data-n="5"]'); await page.click('[data-pace="free"]'); await page.click(`[data-st="${st}"]`); await page.click('#cGo');
+    await page.waitForSelector(`#active .st-${st}`);
+    await tearDrag(page);
+    assert.equal(await binding(page), '4 KVAR', st);
+    await page.click('#backBtn'); await page.waitForTimeout(150);
+  }
+  await ctx.close();
+});
+
 await test('inga fel i konsolen', async () => {
   assert.deepEqual(errors, []);
 });

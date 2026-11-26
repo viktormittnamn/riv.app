@@ -443,3 +443,77 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 /* Val av lappstil i formuläret */
 .styles button { display: inline-flex; align-items: center; gap: 8px; height: 44px; font-family: var(--f-body); }
 .st-demo { font-size: 20px; line-height: 1; }
+
+/* ---------- Fler lappstilar ---------- */
+.tbody .serial { display: block; }
+.st-bio, .st-kvitto, .st-klipp, .st-boarding, .st-kalender { gap: 6px; }
+.st-bio .t-note, .st-kvitto .t-note, .st-klipp .t-note, .st-boarding .t-note { margin-top: 4px; }
+
+/* Biobiljett */
+.tbody.st-bio { padding: 12px; }
+.bi-frame { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; border: 1.5px solid var(--p-ink); border-radius: 10px; outline: 1px solid var(--p-line); outline-offset: -6px; padding: 14px; }
+.bi-frame > .t-row { font-weight: 600; color: var(--p-ink); }
+.bi-mid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; margin-block: auto; }
+.st-bio .bignum { font-size: clamp(96px, 30vw, 128px); line-height: .8; margin: 0; letter-spacing: -.02em; }
+.bi-mid dl { margin: 0; display: grid; gap: 8px; }
+.bi-mid dt { font: 500 9px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--p-muted); }
+.bi-mid dd { margin: 0; font: 700 14.5px var(--f-body); line-height: 1.15; overflow-wrap: anywhere; }
+.bi-foot { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed var(--p-line); padding-top: 10px; }
+
+/* Kvitto */
+.tbody.st-kvitto { padding: 16px 20px 12px; font-family: var(--f-mono); font-size: 12px; gap: 5px; }
+.kv-logo { text-align: center; font: 800 32px/1 'Riv Logo', var(--f-display); }
+.kv-center { text-align: center; font: 500 10.5px var(--f-mono) !important; letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+.st-kvitto hr { border: 0; border-top: 1.5px dashed var(--p-ink); opacity: .45; margin: 4px 0; width: 100%; }
+.kv-li { display: flex; gap: 6px; align-items: baseline; text-transform: uppercase; }
+.kv-li i { flex: 1; border-bottom: 1.5px dotted var(--p-line); transform: translateY(-3px); }
+.kv-li b { font-weight: 600; }
+.kv-tot { font-weight: 600; font-size: 14px; }
+.st-kvitto .kv-tot .bignum { font-size: 42px; line-height: .9; margin: 0; }
+.st-kvitto .t-note input { font-family: var(--f-body); }
+.kv-thanks { justify-content: center; font-weight: 600; color: var(--p-ink); margin-top: auto; }
+.kv-end { display: flex; justify-content: space-between; align-items: center; }
+
+/* Klippkort */
+.tbody.st-klipp { padding: 16px 18px 12px; gap: 10px; }
+.kl-hd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.kl-hd .t-title { font: 800 24px/1 'Riv Display', var(--f-display) !important; text-transform: uppercase; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kl-grid { display: grid; gap: 7px; padding: 12px; border: 1.5px dashed var(--p-line); border-radius: 12px; }
+.kl-grid.small { gap: 4px; padding: 10px; }
+.kl-grid i { aspect-ratio: 1; border-radius: 50%; border: 1.5px solid var(--p-ink); opacity: .45; display: grid; place-items: center; font: 600 9px var(--f-mono); font-style: normal; }
+.kl-grid.small i { border-width: 1px; }
+.kl-grid i.hole { background: var(--board-2); border-color: transparent; opacity: 1; box-shadow: inset 0 2px 3px rgba(0,0,0,.35); }
+.kl-grid i.now { opacity: 1; border: 2px dashed var(--p-stamp); color: var(--p-stamp); }
+.kl-count { display: flex; justify-content: space-between; align-items: baseline; }
+.st-klipp .kl-count .bignum { font-size: 52px; line-height: .85; margin: 0; }
+.kl-end { display: flex; justify-content: flex-end; margin-top: auto; }
+
+/* Boardingkort */
+.tbody.st-boarding { padding: 16px 18px 12px; gap: 10px; }
+.st-boarding > .t-row { font-weight: 600; color: var(--p-ink); }
+.bo-route { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; border-bottom: 1.5px solid var(--p-ink); padding-bottom: 10px; }
+.st-boarding .bo-route .bignum { font-size: 78px; line-height: .8; margin: 0; }
+.bo-to { text-align: right; }
+.bo-route small, .bo-cells small { display: block; font: 500 9px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--p-muted); margin-bottom: 3px; }
+.bo-arr { font-size: 24px; padding-bottom: 10px; }
+.bo-cells { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.bo-cells b { font: 700 14.5px var(--f-body) !important; overflow-wrap: anywhere; text-transform: none !important; }
+.bo-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; }
+
+/* Kalenderblad */
+.tbody.st-kalender { padding: 0; text-align: center; gap: 0; }
+.ka-mon { background: #c8312a; color: #fff; font: 700 12.5px var(--f-mono); letter-spacing: .3em; text-transform: uppercase; padding: 8px 0; }
+[data-paper="kol"] .ka-mon { background: var(--p-stamp); color: var(--p-bg); }
+.st-kalender .ka-day { font-size: clamp(130px, 42vw, 170px); line-height: .82; color: #c8312a; margin: 16px 0 0; }
+[data-paper="kol"] .st-kalender .ka-day { color: var(--p-stamp); }
+.ka-wd { font: 800 25px/1 'Riv Display', var(--f-display); text-transform: uppercase; letter-spacing: .04em; margin-top: 6px; }
+.ka-wk { justify-content: center; margin-top: 6px; }
+.ka-what { font-size: 16px; margin-top: 10px; }
+.st-kalender .t-lead { margin-inline: auto; }
+.ka-bottom { margin-top: auto; padding: 0 18px 12px; text-align: left; display: grid; gap: 6px; }
+.ka-end { display: flex; justify-content: flex-end; }
+
+/* Stilvalet: sju knappar som bryts snyggt */
+.styles button { height: 40px; padding: 0 10px; gap: 6px; font-size: 13px; }
+.st-demo { font-size: 16px; }
+.st-kalender.st-demo { color: #c8312a; }
