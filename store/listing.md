@@ -4,8 +4,8 @@ Gränser: namn 30 tecken, undertitel 30, nyckelord 100 (kommaseparerade, utan me
 
 ## Svenska
 
-**Namn:** Rivblock
-**Undertitel:** Riv av när du gjort det
+**Namn:** Riv
+**Undertitel:** Riv av dina mål, lapp för lapp
 **Kampanjtext:** Ett block per mål. Riv av en lapp varje gång du gjort det. Inga streaks som går sönder, inga prenumerationer.
 **Nyckelord:** vana,utmaning,mål,30 dagar,träning,streak,rivkalender,lappar,checklista,motivation,läsning,nykter
 **Kategori:** Hälsa & träning (sekundär: Produktivitet)
@@ -13,7 +13,7 @@ Gränser: namn 30 tecken, undertitel 30, nyckelord 100 (kommaseparerade, utan me
 
 **Beskrivning:**
 
-Rivblock är ett digitalt rivblock för mål som tar slut.
+Riv är ett digitalt rivblock för mål som tar slut.
 
 Bestäm vad du ska göra och hur många gånger: 10 träningspass, 21 dagar utan socker, 30 kalla bad. Varje gång du har gjort det river du av en lapp med fingret. Det knastrar och telefonen vibrerar längs perforeringen. När blocket är tomt är du klar.
 
@@ -35,8 +35,8 @@ Inget konto, ingen reklam, ingen spårning. Allt sparas på telefonen. Betala en
 
 ## English
 
-**Name:** Rivblock
-**Subtitle:** Tear it off when it's done
+**Name:** Riv
+**Subtitle:** Tear off your goals
 **Promotional text:** One pad per goal. Tear off a ticket every time you do it. No streaks to break, no subscriptions.
 **Keywords:** habit,challenge,goal,30 day,workout,streak,tear off,tickets,checklist,motivation,reading,sober
 **Category:** Health & Fitness (secondary: Productivity)
@@ -44,7 +44,7 @@ Inget konto, ingen reklam, ingen spårning. Allt sparas på telefonen. Betala en
 
 **Description:**
 
-Rivblock is a digital tear-off pad for goals that end.
+Riv is a digital tear-off pad for goals that end.
 
 Decide what you will do and how many times: 10 workouts, 21 days without sugar, 30 cold plunges. Each time you do it, tear off a ticket with your finger. It crackles, and the phone ticks along the perforation. When the pad is empty, you are done.
 
@@ -66,4 +66,4 @@ No account, no ads, no tracking. Everything stays on your phone. Pay once, keep 
 
 ## App Review – anteckning till granskaren
 
-Rivblock is a fully offline app. No login is required. On first launch an intro pad opens; drag a finger horizontally along the dotted line to tear off a ticket. The "one a day" pace intentionally locks the next ticket until tomorrow.
+Riv is a fully offline app. No login is required. On first launch an intro pad opens; drag a finger horizontally along the dotted line to tear off a ticket. The "one a day" pace intentionally locks the next ticket until tomorrow.

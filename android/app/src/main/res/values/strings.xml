@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Rivblock</string>
-    <string name="title_activity_main">Rivblock</string>
+    <string name="app_name">Riv</string>
+    <string name="title_activity_main">Riv</string>
     <string name="package_name">se.rivblock.app</string>
     <string name="custom_url_scheme">se.rivblock.app</string>
 </resources>

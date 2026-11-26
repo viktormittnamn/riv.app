@@ -1,0 +1,158 @@
+<title>Riv Lappen, varianter</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@144,900&family=Bricolage+Grotesque:opsz,wght@96,800&family=Familjen+Grotesk:wght@700&family=Big+Shoulders+Display:wght@900&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: flikar för de tre typsnitten; varje flik visar ett rutnät (form × färg), ordmärken och två sammanhang (App Store, startskärm). */
+:root {
+  --bg: #e9e8ee; --surface: #f7f6fa; --ink: #1b1a21; --muted: #64626f; --line: rgba(27,26,33,.12); --accent: #ef4a2f;
+  --f-display: 'Big Shoulders Display', Impact, sans-serif;
+  --f-body: 'Instrument Sans', -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+h1 { font: 900 clamp(44px, 8vw, 80px)/.9 var(--f-display); text-transform: uppercase; margin: 0 0 10px; }
+h3 { font: 900 26px/1 var(--f-display); text-transform: uppercase; margin: 0; }
+.lead { color: var(--muted); max-width: 62ch; margin: 0 0 22px; }
+.label { font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.tabs button { height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 17px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section { display: grid; gap: 22px; margin-top: 18px; }
+.grid { display: grid; grid-template-columns: 120px repeat(5, minmax(0, 1fr)); gap: 12px 10px; align-items: center; }
+.grid .rowh { font: 500 12px var(--f-mono); color: var(--muted); }
+.grid .colh { font: 500 11px var(--f-mono); color: var(--muted); text-align: center; text-transform: uppercase; letter-spacing: .1em; }
+.grid svg { width: 100%; max-width: 104px; display: block; margin: 0 auto; filter: drop-shadow(0 6px 12px rgba(0,0,0,.16)); }
+.marks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mark { border-radius: 18px; padding: 20px 14px; display: grid; place-items: center; min-height: 130px; }
+.mark svg { width: min(240px, 100%); height: auto; }
+.ctx { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; }
+.store { border-radius: 22px; background: #fff; color: #111; padding: 18px; display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+.store svg { width: 96px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.15)); }
+.store .n { font: 600 22px var(--f-body); }
+.store .s { color: #6b6b70; font-size: 14px; }
+.store .get { margin-top: 10px; display: inline-flex; align-items: center; height: 30px; padding: 0 18px; border-radius: 999px; background: #e9e9ee; color: #0a6cff; font-weight: 700; font-size: 14px; }
+.shots { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.shots div { aspect-ratio: 9 / 12; max-height: 160px; border-radius: 12px; }
+.splash { border-radius: 30px; aspect-ratio: 9 / 16; max-height: 420px; display: grid; place-items: center; justify-self: center; width: 100%; max-width: 240px; box-shadow: 0 0 0 8px #1b1a21; }
+.splash svg { width: 70%; }
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 70px repeat(5, minmax(0, 1fr)); gap: 8px 6px; }
+  .marks, .ctx { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="wrap">
+  <span class="label">Riv · Lappen · dina tre favoriter</span>
+  <h1>Fler varianter</h1>
+  <p class="lead">Välj typsnitt med flikarna. Varje rad är en ikonform och varje kolumn en färg. Under rutnätet ser du ordmärken och hur ikonen ser ut i App Store och på startskärmen.</p>
+  <div class="tabs" role="group" aria-label="Typsnitt" id="tabs"></div>
+  <div id="view"></div>
+</div>
+
+<script>
+const FONTS = [
+  { id: 'fraunces', name: 'Fraunces', css: "'Fraunces', Georgia, serif", w: 900, size: 58 },
+  { id: 'bricolage', name: 'Bricolage Grotesque', css: "'Bricolage Grotesque', sans-serif", w: 800, size: 60 },
+  { id: 'familjen', name: 'Familjen Grotesk', css: "'Familjen Grotesk', sans-serif", w: 700, size: 60 }
+];
+const COLORS = {
+  gul:  { name: 'Gul',  bg: '#f6df8b', bind: '#1b1a21', ink: '#3b2c05', perf: '#a98b2e', notch: '#d9bf62', hole: '#1b1a21' },
+  ljus: { name: 'Ljus', bg: '#efeeea', bind: '#1b1a21', ink: '#1b1a21', perf: '#9c9a94', notch: '#d6d4ce', hole: '#1b1a21' },
+  mork: { name: 'Mörk', bg: '#232227', bind: '#0d0d10', ink: '#f1efe9', perf: '#6c6a72', notch: '#141317', hole: '#f1efe9' },
+  rosa: { name: 'Rosa', bg: '#f7bccb', bind: '#1b1a21', ink: '#4a1426', perf: '#c97f93', notch: '#e49aae', hole: '#1b1a21' },
+  mint: { name: 'Mint', bg: '#b2e5cb', bind: '#1b1a21', ink: '#0f3a28', perf: '#6fb08f', notch: '#93d2b2', hole: '#1b1a21' }
+};
+const FORMS = [
+  { id: 'bind', name: 'Bindning' },
+  { id: 'perf', name: 'Bara perforering' },
+  { id: 'torn', name: 'Riven kant' },
+  { id: 'cap', name: 'Versalt Riv' }
+];
+const zig = (y, a, b, step = 5, amp = 2.2) => { const p = []; for (let x = a, i = 0; x <= b; x += step, i++) p.push(`${x},${y + (i % 2 ? amp : -amp)}`); return p.join(' '); };
+let uid = 0;
+
+function word(f, cap, size, y, ink, hole) {
+  return `<text x="50" y="${y}" text-anchor="middle" font-family="${f.css}" font-weight="${f.w}" font-size="${size}" fill="${ink}">${cap ? '<tspan>R</tspan><tspan class="dotless">ı</tspan><tspan>v</tspan>' : '<tspan>r</tspan><tspan class="dotless">ı</tspan><tspan>v</tspan>'}</text>
+    <circle class="hole" r="${size * 0.075}" fill="${hole}" cx="-20" cy="-20"/>`;
+}
+
+function icon(f, c, form) {
+  const id = 'i' + uid++, s = f.size;
+  let body = `<rect width="100" height="100" fill="${c.bg}"/>`;
+  if (form === 'bind' || form === 'cap') body += `<rect width="100" height="20" fill="${c.bind}"/>
+      <circle cx="0" cy="32" r="5" fill="${c.notch}"/><circle cx="100" cy="32" r="5" fill="${c.notch}"/>
+      <line x1="9" y1="32" x2="91" y2="32" stroke="${c.perf}" stroke-width="2" stroke-dasharray="3.5 3.5"/>` + word(f, form === 'cap', form === 'cap' ? s * 0.88 : s, 84, c.ink, c.hole);
+  if (form === 'perf') body += `<circle cx="0" cy="22" r="6" fill="${c.notch}"/><circle cx="100" cy="22" r="6" fill="${c.notch}"/>
+      <g fill="${c.perf}">${Array.from({ length: 11 }, (_, i) => `<circle cx="${12 + i * 7.6}" cy="22" r="1.7"/>`).join('')}</g>` + word(f, false, s * 1.05, 80, c.ink, c.hole);
+  if (form === 'torn') body += `<polygon points="0,100 0,82 ${zig(82, 0, 100)} 100,82 100,100" fill="${c.bind}"/>
+      <rect width="100" height="9" fill="${c.bind}"/>` + word(f, false, s, 70, c.ink, c.hole);
+  return `<svg viewBox="0 0 100 100" data-font="${f.id}" role="img" aria-label="${f.name}, ${c.name}"><defs><clipPath id="${id}"><rect width="100" height="100" rx="22.4"/></clipPath></defs><g clip-path="url(#${id})">${body}</g></svg>`;
+}
+
+function mark(f, ink, perf, cap, tag) {
+  const s = f.size * 1.5;
+  return `<svg viewBox="0 0 100 ${tag ? 70 : 58}" data-font="${f.id}">
+    <g transform="scale(1)">${word(f, cap, s * 0.55, 40, ink, ink)}</g>
+    <line x1="18" y1="49" x2="82" y2="49" stroke="${perf}" stroke-width="1.8" stroke-dasharray="3.5 3.5"/>
+    ${tag ? `<text x="50" y="64" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="5.4" letter-spacing="1.2" fill="${ink}" opacity=".7">RIV AV DINA MÅL</text>` : ''}</svg>`;
+}
+
+function render(fid) {
+  const f = FONTS.find((x) => x.id === fid);
+  document.querySelectorAll('#tabs button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === fid)));
+  const cols = Object.keys(COLORS);
+  document.getElementById('view').innerHTML = `
+    <section>
+      <div class="grid">
+        <span></span>${cols.map((k) => `<span class="colh">${COLORS[k].name}</span>`).join('')}
+        ${FORMS.map((fo) => `<span class="rowh">${fo.name}</span>${cols.map((k) => icon(f, COLORS[k], fo.id)).join('')}`).join('')}
+      </div>
+      <h3>Ordmärken</h3>
+      <div class="marks">
+        <div class="mark" style="background:#f6df8b">${mark(f, '#3b2c05', '#a98b2e', false, true)}</div>
+        <div class="mark" style="background:#efeeea;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)">${mark(f, '#1b1a21', '#9c9a94', true, true)}</div>
+        <div class="mark" style="background:#1b1a21">${mark(f, '#f1efe9', '#6c6a72', false, false)}</div>
+      </div>
+      <h3>I sammanhang</h3>
+      <div class="ctx">
+        <div class="store">${icon(f, COLORS.gul, 'bind')}<div><div class="n">Riv</div><div class="s">Riv av dina mål, en lapp i taget</div><span class="get">HÄMTA</span></div>
+          <div class="shots"><div style="background:#e9e8ee"></div><div style="background:#f7bccb"></div><div style="background:#b2e5cb"></div></div></div>
+        <div class="splash" style="background:#efeeea">${mark(f, '#1b1a21', '#9c9a94', false, false)}</div>
+      </div>
+    </section>`;
+  requestAnimationFrame(placeHoles);
+}
+
+document.getElementById('tabs').innerHTML = FONTS.map((f) => `<button type="button" data-f="${f.id}" style="font-family:${f.css};font-weight:${f.w}">${f.name}</button>`).join('');
+document.getElementById('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) render(b.dataset.f); });
+
+// Hålet placeras över ı med glyfens verkliga höjd (mäts med canvas)
+const ctx = document.createElement('canvas').getContext('2d');
+function placeHoles() {
+  document.querySelectorAll('svg[data-font]').forEach((svg) => {
+    const f = FONTS.find((x) => x.id === svg.dataset.font);
+    svg.querySelectorAll('.dotless').forEach((t) => {
+      const text = t.parentNode, h = text.nextElementSibling;
+      if (!h || !h.classList.contains('hole')) return;
+      try {
+        const size = +text.getAttribute('font-size'), base = +text.getAttribute('y'), r = +h.getAttribute('r');
+        ctx.font = `${f.w} ${size}px ${f.css}`;
+        const asc = ctx.measureText('ı').actualBoundingBoxAscent, b = t.getBBox();
+        h.setAttribute('cx', b.x + b.width / 2);
+        h.setAttribute('cy', base - asc - r * 1.9);
+      } catch (e) { /* inte renderad ännu */ }
+    });
+  });
+}
+render('fraunces');
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(placeHoles);
+setTimeout(placeHoles, 1200);
+</script>

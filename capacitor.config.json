@@ -1,6 +1,6 @@
 {
   "appId": "se.rivblock.app",
-  "appName": "Rivblock",
+  "appName": "Riv",
   "webDir": "dist",
   "ios": { "contentInset": "never", "backgroundColor": "#e9e8ee", "scrollEnabled": false },
   "android": { "backgroundColor": "#e9e8ee" },

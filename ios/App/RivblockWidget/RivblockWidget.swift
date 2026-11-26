@@ -123,7 +123,7 @@ struct RivblockWidgetView: View {
     var body: some View {
         if entry.pads.isEmpty {
             VStack(spacing: 6) {
-                Text("RIVBLOCK").font(.system(size: 18, weight: .black).width(.condensed))
+                Text("RIV").font(.system(size: 22, weight: .heavy).width(.condensed))
                 Text(L("Skapa ett block i appen", "Create a pad in the app")).font(.caption).multilineTextAlignment(.center).foregroundStyle(.secondary)
             }.containerBackground(Color(red: 0.914, green: 0.91, blue: 0.933), for: .widget)
         } else {
@@ -160,7 +160,7 @@ struct RivblockWidgetView: View {
 struct RivblockWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "RivblockWidget", provider: Provider()) { RivblockWidgetView(entry: $0) }
-            .configurationDisplayName("Rivblock")
+            .configurationDisplayName("Riv")
             .description(L("Dagens lapp och hur många som är kvar.", "Today's ticket and how many are left."))
             .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
             .contentMarginsDisabled()

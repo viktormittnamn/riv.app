@@ -71,10 +71,7 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 
 /* ---------- Topbar ---------- */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 6px; }
-.wordmark { font-family: var(--f-display); font-weight: 900; font-size: 30px; letter-spacing: .01em; text-transform: uppercase; line-height: 1; display: flex; align-items: center; gap: 8px; }
-.wordmark i { width: 12px; height: 18px; background: var(--accent); border-radius: 2px; display: inline-block;
-  -webkit-mask: radial-gradient(circle at 0 50%, transparent 3px, #000 3.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 3px, #000 3.5px) right / 51% 100% no-repeat;
-          mask: radial-gradient(circle at 0 50%, transparent 3px, #000 3.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 3px, #000 3.5px) right / 51% 100% no-repeat; }
+.wordmark { font-family: 'Riv Logo', var(--f-display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: .005em; }
 .icon-btn { width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
 .icon-btn svg { width: 18px; height: 18px; }
 .pill-btn { height: 40px; padding: 0 14px; white-space: nowrap; border-radius: 999px; border: 0; background: var(--ink); color: var(--desk); font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }

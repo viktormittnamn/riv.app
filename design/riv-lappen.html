@@ -1,0 +1,126 @@
+<title>Riv Lappen</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@144,900&family=Bricolage+Grotesque:opsz,wght@96,800&family=Familjen+Grotesk:wght@700&family=Young+Serif&family=Unbounded:wght@800&family=Gloock&family=Big+Shoulders+Display:wght@900&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: överst en hemskärm per färgvariant med alla typsnitt, sedan ett avsnitt per typsnitt med ikonen i gult, ljust och mörkt plus ordmärket. */
+:root {
+  --bg: #e9e8ee; --surface: #f7f6fa; --ink: #1b1a21; --muted: #64626f; --line: rgba(27,26,33,.12);
+  --f-display: 'Big Shoulders Display', Impact, sans-serif;
+  --f-body: 'Instrument Sans', -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+h1 { font: 900 clamp(48px, 9vw, 88px)/.9 var(--f-display); text-transform: uppercase; margin: 0 0 10px; }
+.lead { color: var(--muted); max-width: 60ch; margin: 0 0 24px; }
+.label { font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.homes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.home { border-radius: 26px; padding: 22px 16px 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 8px; justify-items: center; }
+.home.warm { background: linear-gradient(150deg, #cfc6dc, #ecc8b9); }
+.home.cool { background: linear-gradient(150deg, #2b2b31, #4a4a52); }
+.app { display: grid; justify-items: center; gap: 6px; width: 100%; }
+.app svg { width: min(72px, 100%); height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.2)); }
+.app span { font: 600 11.5px var(--f-body); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
+.concept { margin-top: 48px; padding-top: 26px; border-top: 1px solid var(--line); display: grid; gap: 18px; }
+.concept header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.concept h2 { margin: 0; font-size: 34px; line-height: 1; font-weight: 400; }
+.concept p { margin: 0; color: var(--muted); max-width: 62ch; }
+.icons { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px; }
+.icons figure { margin: 0; display: grid; justify-items: center; gap: 6px; }
+.icons figcaption { font: 400 11px var(--f-mono); color: var(--muted); }
+.icons svg { display: block; filter: drop-shadow(0 8px 16px rgba(0,0,0,.16)); }
+.marks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mark { border-radius: 18px; padding: 22px 16px; display: grid; place-items: center; min-height: 130px; }
+.mark svg { width: min(220px, 100%); height: auto; }
+@media (max-width: 700px) { .homes, .marks { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <span class="label">Riv · koncept 3, Lappen</span>
+  <h1>Lappen, sex typsnitt</h1>
+  <p class="lead">Samma ikon i två färgvarianter: gul och minimalistisk svart/vit/grå. Pricken över i:et är ett stansat hål, samma form som hålen i perforeringen. Jämför typsnitten bredvid varandra först, och titta sedan närmare på var och en längre ner.</p>
+  <div class="homes"><div class="home warm" id="homeY"></div><div class="home cool" id="homeM"></div></div>
+  <div id="list"></div>
+</div>
+
+<script>
+const FONTS = [
+  { id: 'fraunces', name: 'Fraunces', css: "'Fraunces', Georgia, serif", w: 900, size: 58, why: 'Mjuk, varm serif med bläckiga kurvor. Känns som tryck på papper. Personlig och vänlig.' },
+  { id: 'bricolage', name: 'Bricolage Grotesque', css: "'Bricolage Grotesque', sans-serif", w: 800, size: 60, why: 'Grotesk med karaktär och lite egensinniga former. Modern men inte steril.' },
+  { id: 'familjen', name: 'Familjen Grotesk', css: "'Familjen Grotesk', sans-serif", w: 700, size: 60, why: 'Ritad av den svenska byrån Familjen. Ren och skandinavisk, en tyst nick till ursprunget.' },
+  { id: 'young', name: 'Young Serif', css: "'Young Serif', Georgia, serif", w: 400, size: 58, why: 'Tjock, vänlig serif i stil med gamla affischer. Lugn och självsäker.' },
+  { id: 'unbounded', name: 'Unbounded', css: "'Unbounded', sans-serif", w: 800, size: 40, why: 'Bred och rundad. Lekfull och syns på långt håll, men tar mycket plats.' },
+  { id: 'gloock', name: 'Gloock', css: "'Gloock', Georgia, serif", w: 400, size: 62, why: 'Serif med hög kontrast, elegant och redaktionell. Mest exklusiv känsla.' }
+];
+const SCHEMES = {
+  gul:    { name: 'Gul',   bg: '#f6df8b', bind: '#1b1a21', ink: '#3b2c05', perf: '#a98b2e', notch: '#d9bf62', hole: '#1b1a21' },
+  ljus:   { name: 'Ljus',  bg: '#efeeea', bind: '#1b1a21', ink: '#1b1a21', perf: '#9c9a94', notch: '#d6d4ce', hole: '#1b1a21' },
+  mork:   { name: 'Mörk',  bg: '#232227', bind: '#0d0d10', ink: '#f1efe9', perf: '#6c6a72', notch: '#17161a', hole: '#f1efe9' }
+};
+
+let uid = 0;
+// Ikon: bindning, perforering, "rıv" med ett stansat hål som prick
+function icon(f, s) {
+  const id = 'i' + uid++;
+  return `<svg viewBox="0 0 100 100" data-font="${f.id}"><defs><clipPath id="${id}"><rect width="100" height="100" rx="22.4"/></clipPath></defs>
+    <g clip-path="url(#${id})">
+      <rect width="100" height="100" fill="${s.bg}"/>
+      <rect width="100" height="20" fill="${s.bind}"/>
+      <circle cx="0" cy="32" r="5" fill="${s.notch}"/><circle cx="100" cy="32" r="5" fill="${s.notch}"/>
+      <line x1="9" y1="32" x2="91" y2="32" stroke="${s.perf}" stroke-width="2" stroke-dasharray="3.5 3.5"/>
+      <text x="50" y="84" text-anchor="middle" font-family="${f.css}" font-weight="${f.w}" font-size="${f.size}" fill="${s.ink}"><tspan>r</tspan><tspan class="dotless">ı</tspan><tspan>v</tspan></text>
+      <circle class="hole" r="${f.size * 0.075}" fill="${s.hole}" cx="-20" cy="-20"/>
+    </g></svg>`;
+}
+// Ordmärke på papper eller ren bakgrund
+function mark(f, bg, ink, perf) {
+  return `<svg viewBox="0 0 200 110" data-font="${f.id}">
+    <text x="100" y="78" text-anchor="middle" font-family="${f.css}" font-weight="${f.w}" font-size="${f.size * 1.5}" fill="${ink}"><tspan>r</tspan><tspan class="dotless">ı</tspan><tspan>v</tspan></text>
+    <circle class="hole" r="${f.size * 1.5 * 0.075}" fill="${ink}" cx="-20" cy="-20"/>
+    <line x1="34" y1="96" x2="166" y2="96" stroke="${perf}" stroke-width="3.5" stroke-dasharray="7 7"/></svg>`;
+}
+
+document.getElementById('homeY').innerHTML = FONTS.map((f) => `<div class="app">${icon(f, SCHEMES.gul)}<span>${f.name.split(' ')[0]}</span></div>`).join('');
+document.getElementById('homeM').innerHTML = FONTS.map((f, i) => `<div class="app">${icon(f, i % 2 ? SCHEMES.mork : SCHEMES.ljus)}<span>${f.name.split(' ')[0]}</span></div>`).join('');
+document.getElementById('list').innerHTML = FONTS.map((f) => `
+  <section class="concept">
+    <header><span class="label">Typsnitt</span><h2 style="font-family:${f.css};font-weight:${f.w}">${f.name}</h2></header>
+    <p>${f.why}</p>
+    <div class="icons">
+      ${Object.values(SCHEMES).map((s) => `<figure><div style="width:120px">${icon(f, s)}</div><figcaption>${s.name}</figcaption></figure>`).join('')}
+      ${[40, 29].map((px) => `<figure><div style="width:${px}px">${icon(f, SCHEMES.gul)}</div><figcaption>${px} px</figcaption></figure>`).join('')}
+      <figure><div style="width:29px">${icon(f, SCHEMES.mork)}</div><figcaption>29 px</figcaption></figure>
+    </div>
+    <div class="marks">
+      <div class="mark" style="background:#f6df8b">${mark(f, '#f6df8b', '#3b2c05', '#a98b2e')}</div>
+      <div class="mark" style="background:#efeeea;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)">${mark(f, '#efeeea', '#1b1a21', '#9c9a94')}</div>
+      <div class="mark" style="background:#1b1a21">${mark(f, '#1b1a21', '#f1efe9', '#6c6a72')}</div>
+    </div>
+  </section>`).join('');
+
+// Placera "hålet" över ı när typsnitten laddats (glyfernas mått skiljer sig per typsnitt)
+const ctx = document.createElement('canvas').getContext('2d');
+function placeHoles() {
+  document.querySelectorAll('svg[data-font]').forEach((svg) => {
+    const t = svg.querySelector('.dotless'), h = svg.querySelector('.hole');
+    if (!t || !h) return;
+    try {
+      const text = t.parentNode, f = FONTS.find((x) => x.id === svg.dataset.font);
+      const size = +text.getAttribute('font-size'), base = +text.getAttribute('y'), r = +h.getAttribute('r');
+      // glyfens verkliga höjd (x-höjd) mäts med canvas
+      ctx.font = `${f.w} ${size}px ${f.css}`;
+      const asc = ctx.measureText('ı').actualBoundingBoxAscent;
+      const b = t.getBBox();
+      h.setAttribute('cx', b.x + b.width / 2);
+      h.setAttribute('cy', base - asc - r * 1.9);
+    } catch (e) { /* osynlig ännu */ }
+  });
+}
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(placeHoles);
+setTimeout(placeHoles, 1200);
+</script>

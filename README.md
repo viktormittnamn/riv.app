@@ -1,6 +1,6 @@
-# Rivblock
+# Riv
 
-Ett digitalt rivblock för avgränsade mål. Man skapar ett block med ett bestämt antal lappar, till exempel 10 pass, 21 dagar eller 30 sidor. Sedan river man av en lapp med fingret varje gång man gjort det. Blocket är klart när det är tomt. Det finns inga streaks och inget straff för missade dagar.
+Riv (tidigare arbetsnamn Rivblock) är ett digitalt rivblock för avgränsade mål. Man skapar ett block med ett bestämt antal lappar, till exempel 10 pass, 21 dagar eller 30 sidor. Sedan river man av en lapp med fingret varje gång man gjort det. Blocket är klart när det är tomt. Det finns inga streaks och inget straff för missade dagar.
 
 ## Vad som finns
 

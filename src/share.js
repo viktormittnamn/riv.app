@@ -34,7 +34,7 @@ function spaced(s) { return s.split('').join(' '); }
 
 export async function ensureFonts() {
   if (!document.fonts?.load) return;
-  try { await Promise.all([document.fonts.load(`900 96px ${DISPLAY}`), document.fonts.load(`500 24px ${MONO}`)]); } catch { /* reserv */ }
+  try { await Promise.all([document.fonts.load(`900 96px ${DISPLAY}`), document.fonts.load(`500 24px ${MONO}`), document.fonts.load("800 48px 'Riv Logo'")]); } catch { /* reserv */ }
 }
 
 export function drawShare(b, { notes = false } = {}) {
@@ -116,7 +116,8 @@ export function drawShare(b, { notes = false } = {}) {
   }
   // signatur
   x.fillStyle = '#23211d'; x.textAlign = 'left'; x.font = `900 42px ${DISPLAY}`;
-  x.fillText('RIVBLOCK', BX + 60, BY + BH - 92);
+  x.font = `800 48px 'Riv Logo', ${DISPLAY}`;
+  x.fillText('RIV', BX + 60, BY + BH - 92);
   x.font = `500 18px ${MONO}`; x.fillStyle = 'rgba(35,33,29,.7)';
   x.fillText('RB-' + b.id, BX + 60, BY + BH - 62);
   return c;

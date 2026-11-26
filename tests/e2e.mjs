@@ -121,7 +121,7 @@ await test('riv hela intro-blocket → tom kartong med knapp till första blocke
   await page.fill('#cTitle', 'Yoga');
   await page.click('#cGo');
   await page.click('#backBtn');
-  assert.equal(await page.locator('text=Så funkar Rivblock').count(), 0, 'färdigt intro ska försvinna');
+  assert.equal(await page.locator('text=Så funkar Riv').count(), 0, 'färdigt intro ska försvinna');
   await ctx.close();
 });
 
@@ -181,7 +181,7 @@ await test('inställningar: engelska, säkerhetskopia tur och retur', async () =
 
 await test('engelsk telefon får engelska från början', async () => {
   const { ctx, page } = await fresh({ locale: 'en-US' });
-  assert.match(await page.locator('#padView h2').innerText(), /How Rivblock works/);
+  assert.match(await page.locator('#padView h2').innerText(), /How Riv works/);
   await ctx.close();
 });
 

@@ -69,7 +69,7 @@ export async function shareImage(blob, title) {
       await Share.share({ title, files: [res.uri] });
       return 'shared';
     }
-    const file = new File([blob], 'rivblock.png', { type: 'image/png' });
+    const file = new File([blob], 'riv.png', { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title });
       return 'shared';

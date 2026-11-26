@@ -174,7 +174,7 @@ function renderShelf() {
   const sw = (html, b) => `<div class="swipe" data-sw="${b.id}"><div class="swipe-bg" aria-hidden="true"><span class="sw-pin">${I.pin}</span><span class="sw-del">${I.trash}</span></div>${html}</div>`;
   const grid = state.settings.view === 'grid';
   const section = (label, list, first, done) => list.length ? `<div class="shelf-head${first ? ' first' : ''}"><span class="label">${label}</span>${first ? `<button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button>` : `<span class="label">${list.length}</span>`}</div>${grid ? `<div class="tiles">${list.map((b) => sw(tile(b), b)).join('')}</div>` : `<div class="${done ? 'done-grid' : 'cards'}">${list.map((b) => sw(card(b), b)).join('')}</div>`}` : '';
-  let h = `<header class="topbar"><div class="wordmark" aria-label="Rivblock"><i></i>Rivblock</div>
+  let h = `<header class="topbar"><div class="wordmark" role="img" aria-label="Riv">RIV</div>
     <div class="row"><button class="icon-btn" type="button" id="viewBtn" aria-label="${grid ? t('viewList') : t('viewGrid')}">${grid ? I.list : I.grid}</button>
     <button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
     <button class="pill-btn" type="button" id="newBtn">${I.plus}${t('newBlock')}</button></div></header>
@@ -832,7 +832,7 @@ function openSettings() {
   }, t('settings'));
 }
 
-/* ---------- Rivblock Hela (engångsköp) ---------- */
+/* ---------- Riv Hela (engångsköp) ---------- */
 function openPro(reason) {
   openSheet(`<div class="pro-hero">${['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'].map((p, i) => `<i data-paper="${p}" style="--r:${(i - 2.5) * 4}deg"></i>`).join('')}</div>
     <h2>${t('proTitle')}</h2>${reason ? `<p>${esc(reason)}</p>` : ''}<p>${t('proText')}</p>

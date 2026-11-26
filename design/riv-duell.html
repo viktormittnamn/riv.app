@@ -1,0 +1,126 @@
+<title>Riv duell</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@96,75,800&family=Schibsted+Grotesk:wght@800&family=Big+Shoulders+Display:wght@900&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: två kolumner, en per typsnitt; varje rad är ett sammanhang (ikoner, hemskärm, appens rubrik, App Store, startskärm). */
+:root {
+  --bg: #e9e8ee; --surface: #f7f6fa; --ink: #1b1a21; --muted: #64626f; --line: rgba(27,26,33,.12);
+  --f-display: 'Big Shoulders Display', Impact, sans-serif;
+  --f-body: 'Instrument Sans', -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #16151b; --surface: #222129; --ink: #f1eff6; --muted: #a09dab; --line: rgba(241,239,246,.12); color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+h1 { font: 900 clamp(44px, 8vw, 80px)/.9 var(--f-display); text-transform: uppercase; margin: 0 0 10px; }
+.lead { color: var(--muted); max-width: 62ch; margin: 0 0 24px; }
+.label { font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.duel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.col { display: grid; gap: 14px; align-content: start; }
+.col > h2 { margin: 0; font-size: 30px; line-height: 1.1; }
+.card { border-radius: 20px; background: var(--surface); padding: 16px; display: grid; gap: 10px; box-shadow: inset 0 0 0 1px var(--line); }
+.icons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.icons svg { width: 100%; filter: drop-shadow(0 6px 12px rgba(0,0,0,.15)); }
+.home { border-radius: 18px; padding: 16px 10px; background: linear-gradient(150deg, #cfc6dc, #ecc8b9); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 6px; justify-items: center; }
+.home.dark { background: linear-gradient(150deg, #24232a, #3d3c44); }
+.home .a { display: grid; justify-items: center; gap: 4px; width: 100%; }
+.home svg, .home .d { width: min(58px, 100%); aspect-ratio: 1; }
+.home svg { filter: drop-shadow(0 3px 6px rgba(0,0,0,.2)); }
+.home .d { border-radius: 22%; background: rgba(255,255,255,.35); }
+.home span { font: 600 10.5px var(--f-body); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
+.tiny { display: flex; gap: 14px; align-items: center; }
+.tiny svg { width: 29px; height: 29px; }
+.tiny .note { font: 400 12px var(--f-body); color: var(--muted); }
+.appbar { border-radius: 14px; background: #e9e8ee; padding: 14px 14px 12px; display: flex; align-items: center; justify-content: space-between; }
+.appbar svg { height: 30px; width: auto; }
+.appbar .btn { height: 32px; padding: 0 12px; border-radius: 999px; background: #1b1a21; color: #e9e8ee; font: 600 12px var(--f-body); display: grid; place-items: center; }
+.store { border-radius: 16px; background: #fff; color: #111; padding: 14px; display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 12px; align-items: center; }
+.store svg { width: 70px; filter: drop-shadow(0 3px 8px rgba(0,0,0,.15)); }
+.store b { font: 600 18px var(--f-body); display: block; }
+.store small { color: #6b6b70; font-size: 13px; }
+.splashes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.splash { border-radius: 22px; aspect-ratio: 9 / 15; display: grid; place-items: center; box-shadow: 0 0 0 5px #1b1a21; }
+.splash svg { width: 62%; }
+@media (max-width: 760px) { .duel { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <span class="label">Riv · finalen</span>
+  <h1>Schibsted mot Bricolage smal</h1>
+  <p class="lead">Samma uppsättning för båda, med bara bokstäver: ikonen i tre färger, på hemskärmen och i minsta storlek, som rubrik inne i appen, i App Store och som startskärm.</p>
+  <div class="duel" id="duel"></div>
+</div>
+
+<script>
+const FONTS = [
+  { id: 'schibsted', name: 'Schibsted Grotesk', css: "'Schibsted Grotesk', sans-serif", w: 800, st: '100%', size: 40 },
+  { id: 'brismal', name: 'Bricolage smal', css: "'Bricolage Grotesque', sans-serif", w: 800, st: '75%', size: 50 }
+];
+const C = {
+  gul:  { bg: '#f6df8b', bind: '#1b1a21', ink: '#3b2c05', perf: '#a98b2e', notch: '#d9bf62' },
+  ljus: { bg: '#efeeea', bind: '#1b1a21', ink: '#1b1a21', perf: '#9c9a94', notch: '#d6d4ce' },
+  mork: { bg: '#232227', bind: '#0d0d10', ink: '#f1efe9', perf: '#6c6a72', notch: '#141317' }
+};
+let uid = 0;
+const riv = (f, perf, size, y, ink, x = 50, anchor = 'middle') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="${f.css}" font-weight="${f.w}" font-stretch="${f.st}" font-size="${size}" fill="${ink}"><tspan>R</tspan><tspan class="capi"${perf ? ' fill-opacity="0"' : ''}>I</tspan><tspan>V</tspan></text>${perf ? `<line class="perfi" stroke="${ink}"/>` : ''}`;
+
+function icon(f, c, perf) {
+  const id = 'c' + uid++;
+  return `<svg viewBox="0 0 100 100" data-font="${f.id}"><defs><clipPath id="${id}"><rect width="100" height="100" rx="22.4"/></clipPath></defs><g clip-path="url(#${id})">
+    <rect width="100" height="100" fill="${c.bg}"/><rect width="100" height="20" fill="${c.bind}"/>
+    <circle cx="0" cy="32" r="5" fill="${c.notch}"/><circle cx="100" cy="32" r="5" fill="${c.notch}"/>
+    <line x1="9" y1="32" x2="91" y2="32" stroke="${c.perf}" stroke-width="2" stroke-dasharray="3.5 3.5"/>
+    ${riv(f, perf, f.size, 82, c.ink)}</g></svg>`;
+}
+const word = (f, perf, ink, w = 120, h = 44) => `<svg viewBox="0 0 ${w} ${h}" data-font="${f.id}">${riv(f, perf, h * 0.95, h * 0.84, ink, 0, 'start')}</svg>`;
+const splash = (f, perf, ink, perfc) => `<svg viewBox="0 0 100 60" data-font="${f.id}">${riv(f, perf, 40, 38, ink)}<line x1="22" y1="50" x2="78" y2="50" stroke="${perfc}" stroke-width="1.6" stroke-dasharray="3 3"/></svg>`;
+
+document.getElementById('duel').innerHTML = FONTS.map((f) => `
+  <div class="col">
+    <h2 style="font-family:${f.css};font-weight:${f.w};font-stretch:${f.st}">${f.name}</h2>
+    <div class="card"><span class="label">Ikon</span><div class="icons">${['gul', 'ljus', 'mork'].map((k) => icon(f, C[k], false)).join('')}</div></div>
+    <div class="card"><span class="label">Hemskärm</span>
+      <div class="home">${icon(f, C.gul, false).replace('<svg', '<svg class="x"')}<div class="d"></div><div class="d"></div><div class="d"></div></div>
+      <div class="home dark">${icon(f, C.mork, false)}<div class="d"></div><div class="d"></div><div class="d"></div></div>
+      <div class="tiny">${icon(f, C.gul, false)}${icon(f, C.ljus, false)}${icon(f, C.mork, false)}<span class="note">29 px, som i Inställningar och notiser</span></div>
+    </div>
+    <div class="card"><span class="label">Inne i appen</span>
+      <div class="appbar">${word(f, false, '#1b1a21')}<span class="btn">+ Nytt block</span></div>
+      <div class="appbar" style="background:#16151b">${word(f, false, '#f1efe9')}<span class="btn" style="background:#f1efe9;color:#16151b">+ Nytt block</span></div>
+    </div>
+    <div class="card"><span class="label">App Store</span>
+      <div class="store">${icon(f, C.gul, false)}<div><b>Riv</b><small>Riv av dina mål, en lapp i taget</small></div></div>
+      <div class="store">${icon(f, C.mork, false)}<div><b>Riv</b><small>Tear off your goals</small></div></div>
+    </div>
+    <div class="card"><span class="label">Startskärm</span>
+      <div class="splashes"><div class="splash" style="background:#f6df8b">${splash(f, false, '#3b2c05', '#a98b2e')}</div><div class="splash" style="background:#1b1a21">${splash(f, false, '#f1efe9', '#6c6a72')}</div></div>
+    </div>
+  </div>`).join('');
+
+// Det perforerade I:et: en prickad stapel där I:et står, lika hög och tjock som bokstaven
+const ctx = document.createElement('canvas').getContext('2d');
+function place() {
+  document.querySelectorAll('svg[data-font]').forEach((svg) => {
+    const f = FONTS.find((x) => x.id === svg.dataset.font);
+    svg.querySelectorAll('.capi').forEach((t) => {
+      const text = t.parentNode, ln = text.nextElementSibling;
+      if (!ln || !ln.classList.contains('perfi')) return;
+      try {
+        const size = +text.getAttribute('font-size'), base = +text.getAttribute('y');
+        ctx.font = `${f.w} ${size}px ${f.css}`;
+        const m = ctx.measureText('I'), capH = m.actualBoundingBoxAscent;
+        const stem = capH * (f.st === '75%' ? 0.19 : 0.22); // bara själva staplen (Schibsteds I har seriffer)
+        const b = t.getBBox(), x = b.x + b.width / 2, dash = capH / 7;
+        ln.setAttribute('x1', x); ln.setAttribute('x2', x); ln.setAttribute('y1', base - capH); ln.setAttribute('y2', base);
+        ln.setAttribute('stroke-width', stem); ln.setAttribute('stroke-dasharray', `${dash} ${dash * 0.6}`);
+      } catch (e) { /* inte renderad ännu */ }
+    });
+  });
+}
+(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(place);
+setTimeout(place, 1200);
+</script>
