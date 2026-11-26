@@ -563,3 +563,8 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 @keyframes slam { from { transform: scale(2.6) rotate(-16deg); opacity: 0; } to { transform: rotate(-4deg); opacity: .85; } }
 @keyframes pop { from { transform: translateY(8px) scale(.8); opacity: 0; } }
 .styles button { position: relative; }
+
+/* iOS zoomar in på textfält under 16 px och appen går inte att zooma tillbaka. Alla fält är minst 16 px,
+   och dubbeltryck-zoom är avstängt. */
+input, textarea, select { font-size: 16px !important; }
+html, body { touch-action: manipulation; }

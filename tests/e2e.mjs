@@ -465,6 +465,19 @@ await test('mål ("vad räknas som klart") visas och sista lappen firas', async 
   await ctx.close();
 });
 
+await test('inga textfält under 16 px (annars zoomar iPhone in)', async () => {
+  const { ctx, page } = await fresh();
+  const check = async (where) => {
+    const small = await page.evaluate(() => [...document.querySelectorAll('input, textarea, select')].filter((el) => el.offsetParent && parseFloat(getComputedStyle(el).fontSize) < 16).map((el) => el.id || el.className));
+    assert.deepEqual(small, [], where);
+  };
+  await check('block');
+  await page.click('#backBtn'); await page.click('#newBtn'); await check('nytt block');
+  await page.click('#scrim', { position: { x: 10, y: 10 } }); await page.click('#setBtn'); await page.click('#sImport'); await check('inställningar');
+  assert.match(await page.evaluate(() => document.querySelector('meta[name=viewport]').content), /maximum-scale=1/);
+  await ctx.close();
+});
+
 await test('inga fel i konsolen', async () => {
   assert.deepEqual(errors, []);
 });
