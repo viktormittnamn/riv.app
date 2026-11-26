@@ -267,6 +267,44 @@ await test('riktigt fingersvep (touch) river av, lodrätt svep gör det inte', a
   await ctx.close();
 });
 
+await test('hyllan: swipe vänster tar bort ett block, kort drag gör det inte, Ångra', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  const count = () => page.locator('[data-open]').count();
+  const n0 = await count();
+  const drag = async (dist) => {
+    const b = await page.locator('.pad-card >> nth=0').boundingBox();
+    await page.mouse.move(b.x + b.width - 20, b.y + 30); await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(b.x + b.width - 20 - (dist * i) / 10, b.y + 31);
+    await page.mouse.up(); await page.waitForTimeout(350);
+  };
+  await drag(60);
+  assert.equal(await count(), n0, 'kort drag ska inte ta bort');
+  assert.equal(await page.locator('#padView').isHidden(), true, 'swipe ska inte öppna blocket');
+  await drag(250);
+  assert.equal(await count(), n0 - 1);
+  await page.click('.toast button');
+  assert.equal(await count(), n0);
+  await ctx.close();
+});
+
+await test('hyllan: Välj → Markera alla → Ta bort, och Ångra', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  const n0 = await page.locator('[data-open]').count();
+  await page.click('#selBtn');
+  await page.click('[data-open] >> nth=0');
+  assert.match(await page.locator('#selDel').innerText(), /\(1\)/);
+  await page.click('#selAll');
+  assert.match(await page.locator('#selDel').innerText(), new RegExp(`\\(${n0}\\)`));
+  await page.screenshot({ path: SHOTS + '11-select.png' });
+  await page.click('#selDel');
+  assert.equal(await page.locator('[data-open]').count(), 0);
+  await page.click('.toast button');
+  assert.equal(await page.locator('[data-open]').count(), n0);
+  await ctx.close();
+});
+
 await test('inga fel i konsolen', async () => {
   assert.deepEqual(errors, []);
 });

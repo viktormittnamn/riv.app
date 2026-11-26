@@ -1,6 +1,8 @@
-// Syntetiserade pappersljud med Web Audio — inga ljudfiler.
+// Pappersljud: en riktig CC0-inspelning (src/sounds/rip.mp3) som spelas i korta bitar i takt med fingret.
+// Syntetiskt brus används tills inspelningen är laddad.
+import ripUrl from './sounds/rip.mp3';
 
-let ctx = null, buf = null, enabled = true;
+let ctx = null, buf = null, enabled = true, sample = null, loading = false;
 export const setSound = (on) => { enabled = on; };
 
 export function unlock() {
@@ -20,6 +22,12 @@ export function unlock() {
         d[i] = w * 0.65 + (b0 + b1 + b2) * 0.35;
       }
     }
+    if (!sample && !loading) {
+      loading = true;
+      // ripUrl är en inbyggd data-URL; avkoda direkt (fetch av data: kan blockeras av CSP)
+      const bytes = Uint8Array.from(atob(ripUrl.split(',')[1]), (c) => c.charCodeAt(0));
+      ctx.decodeAudioData(bytes.buffer).then((b) => { sample = b; }).catch(() => {});
+    }
     if (ctx.state !== 'running') {
       ctx.resume();
       // iOS: en tyst buffert inom användarens tryck låser upp ljudet på riktigt
@@ -34,11 +42,37 @@ function prof(paper) {
   return { f: 1750, q: 1.2, g: 0.26, hp: 450 };
 }
 const ready = () => enabled && ctx && buf;
+
+// Varje papper låter som sin vikt: tonhöjd (rate) och filter
+const PAPER = {
+  rosa: { rate: 1.05, hp: 280, lp: 9000, g: 0.9 },
+  smor: { rate: 0.98, hp: 220, lp: 8000, g: 0.95 },
+  mint: { rate: 1.1, hp: 320, lp: 10000, g: 0.85 },
+  himmel: { rate: 0.94, hp: 200, lp: 7000, g: 0.95 },
+  kvitto: { rate: 1.38, hp: 1100, lp: 14000, g: 0.75 }, // tunt termopapper: ljust och vasst
+  kol: { rate: 0.7, hp: 90, lp: 2600, g: 1.25 } // tjock kartong: mörkt och dovt
+};
+
+/** Spela en bit av inspelningen [from, from+len] genom papprets filter */
+function grain(paper, from, len, gain, rateJitter = 0.04) {
+  const P = PAPER[paper] || PAPER.rosa, t = ctx.currentTime;
+  const s = ctx.createBufferSource(); s.buffer = sample;
+  s.playbackRate.value = P.rate * (1 - rateJitter + Math.random() * rateJitter * 2);
+  const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = P.hp;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = P.lp;
+  const g = ctx.createGain(), dur = len / s.playbackRate.value, v = gain * P.g;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006);
+  g.gain.setValueAtTime(v, t + dur * 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(hp); hp.connect(lp); lp.connect(g); g.connect(ctx.destination);
+  s.start(t, from, len);
+}
 function src() { const s = ctx.createBufferSource(); s.buffer = buf; return s; }
 
 /** Ett litet ripp per perforeringstand; följer draghastigheten */
 export function rip(paper, vel = 0.5, prog = 0.5) {
   if (!ready()) return;
+  // inspelningens svaga rivdel (0,05–0,22 s) följer hur långt fingret kommit
+  if (sample) { try { grain(paper, 0.05 + prog * 0.15 + Math.random() * 0.01, 0.045, Math.min(1.3, 0.45 + vel * 0.5)); } catch { /* */ } return; }
   try {
     const t = ctx.currentTime, p = prof(paper), s = src(), dur = 0.02 + Math.random() * 0.018;
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
@@ -56,6 +90,7 @@ export function rip(paper, vel = 0.5, prog = 0.5) {
 /** Det sista ryck-ljudet när lappen lossnar */
 export function snap(paper) {
   if (!ready()) return;
+  if (sample) { try { grain(paper, 0.19, 0.3, 1.25, 0.02); } catch { /* */ } return; } // det kraftiga rycket
   try {
     const t = ctx.currentTime, p = prof(paper), s = src();
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.85;

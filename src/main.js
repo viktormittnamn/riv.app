@@ -106,12 +106,19 @@ function chipFor(b) {
 }
 const tag = (b) => (b.example ? `<span class="ex-tag">${t('example')}</span>` : '');
 
+let selecting = false;
+const selected = new Set();
+const pick = (b) => (selecting ? `<span class="pick" aria-hidden="true">${selected.has(b.id) ? '✓' : ''}</span>` : '');
+const sel = (b) => (selecting ? ` aria-pressed="${selected.has(b.id)}"` : '');
+
 function renderShelf() {
   const { active, done } = shelfOrder(state.blocks);
+  for (const id of selected) if (!getBlock(id)) selected.delete(id);
   let h = `<header class="topbar"><div class="wordmark" aria-label="Rivblock"><i></i>Rivblock</div>
     <div class="row"><button class="icon-btn" type="button" id="setBtn" aria-label="${t('settings')}">${I.gear}</button>
     <button class="pill-btn" type="button" id="newBtn">${I.plus}${t('newBlock')}</button></div></header>
-    <div class="shelf-scroll"><p class="shelf-intro">${t('intro')}</p>`;
+    <div class="shelf-scroll${selecting ? ' selecting' : ''}"><p class="shelf-intro">${t('intro')}</p>
+    ${state.blocks.length ? `<div class="shelf-head first"><span class="label">${t('activeBlocks')}</span><button class="link-btn" type="button" id="selBtn">${selecting ? t('selectDone') : t('select')}</button></div>` : ''}`;
   if (!active.length) {
     h += `<div class="empty"><div>${t('emptyShelf')}</div><button class="pill-btn accent" type="button" data-new>${t('startBlock')}</button></div>`;
   } else {
@@ -119,7 +126,7 @@ function renderShelf() {
       const left = remaining(b), pct = Math.round((b.torn.length / b.total) * 100);
       let sheets = '';
       for (let i = Math.min(3, left - 1); i >= 1; i--) sheets += `<div class="sheet" style="transform:translate(${i * 2}px,${i * 3}px);opacity:${1 - i * 0.22}"></div>`;
-      return `<button class="pad-card" type="button" data-open="${b.id}">
+      return `<button class="pad-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
         <div class="mini" data-paper="${b.paper}">${sheets}<div class="face"><div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
         <div style="min-width:0"><h3>${esc(b.title)}${tag(b)}</h3>
         <div class="meta">${t('tornOf', b.torn.length, b.total)} · ${b.pace === 'daily' ? t('daily') : t('free')}</div>
@@ -129,16 +136,73 @@ function renderShelf() {
   }
   if (done.length) {
     h += `<div class="shelf-head"><span class="label">${t('emptyBlocks')}</span><span class="label">${done.length}</span></div>`;
-    h += '<div class="done-grid">' + done.map((b) => `<button class="done-card" type="button" data-open="${b.id}">
+    h += '<div class="done-grid">' + done.map((b) => `<button class="done-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
       <div class="tag" data-paper="${b.paper}"><b>${b.total} / ${b.total}</b></div>
       <div><h4>${esc(b.title)}</h4><div class="meta">${t('finished', fmtDate(lastTorn(b).at, true))}${b.example ? ' · ' + t('example').toLowerCase() : ''}</div></div></button>`).join('') + '</div>';
   }
   h += '</div>';
+  if (selecting) {
+    const all = selected.size === state.blocks.length;
+    h += `<div class="select-bar"><button class="pill-btn ghost" type="button" id="selAll">${all ? t('selectNone') : t('selectAll')}</button>
+      <button class="pill-btn danger" type="button" id="selDel"${selected.size ? '' : ' disabled'}>${t('deleteN', selected.size)}</button></div>`;
+  }
   shelfView.innerHTML = h;
 }
 
+/** Tar bort block och visar Ångra som lägger tillbaka dem på samma plats */
+function removeBlocks(ids) {
+  const gone = state.blocks.map((b, i) => [b, i]).filter(([b]) => ids.includes(b.id));
+  if (!gone.length) return;
+  state.blocks = state.blocks.filter((b) => !ids.includes(b.id));
+  save(true); renderShelf(); haptic.snap();
+  toast(t('removedN', gone.length), t('undo').split(' ')[0], () => {
+    for (const [b, i] of gone) state.blocks.splice(i, 0, b);
+    save(true); renderShelf();
+  });
+}
+
+/* Swipe åt vänster på ett kort tar bort blocket */
+let swipe = null, swallowClick = false;
+shelfView.addEventListener('pointerdown', (e) => {
+  const card = e.target.closest('[data-open]');
+  if (!card || selecting) return;
+  swipe = { card, id: card.dataset.open, x0: e.clientX, y0: e.clientY, dx: 0, on: false, pid: e.pointerId };
+});
+shelfView.addEventListener('pointermove', (e) => {
+  if (!swipe || e.pointerId !== swipe.pid) return;
+  const dx = e.clientX - swipe.x0, dy = e.clientY - swipe.y0;
+  if (!swipe.on) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; } // det var scroll
+    if (Math.abs(dx) < 10) return;
+    swipe.on = true;
+    try { swipe.card.setPointerCapture(e.pointerId); } catch { /* */ }
+  }
+  swipe.dx = Math.min(0, dx);
+  swipe.card.style.transition = 'none';
+  swipe.card.style.transform = `translateX(${swipe.dx}px)`;
+  swipe.card.style.opacity = String(1 - Math.min(0.6, -swipe.dx / swipe.card.offsetWidth));
+});
+function endSwipe() {
+  if (!swipe) return;
+  const { card, id, dx, on } = swipe; swipe = null;
+  if (!on) return;
+  swallowClick = true; setTimeout(() => { swallowClick = false; }, 50);
+  card.style.transition = 'transform .25s ease, opacity .25s ease';
+  if (-dx > card.offsetWidth * 0.4) {
+    card.style.transform = 'translateX(-110%)'; card.style.opacity = '0';
+    setTimeout(() => removeBlocks([id]), 200);
+  } else { card.style.transform = ''; card.style.opacity = ''; }
+}
+shelfView.addEventListener('pointerup', endSwipe);
+shelfView.addEventListener('pointercancel', endSwipe);
+
 shelfView.addEventListener('click', (e) => {
+  if (swallowClick) return;
+  if (e.target.closest('#selBtn')) { selecting = !selecting; selected.clear(); return renderShelf(); }
+  if (e.target.closest('#selAll')) { if (selected.size === state.blocks.length) selected.clear(); else state.blocks.forEach((b) => selected.add(b.id)); return renderShelf(); }
+  if (e.target.closest('#selDel')) { const ids = [...selected]; selecting = false; selected.clear(); return removeBlocks(ids); }
   const o = e.target.closest('[data-open]');
+  if (o && selecting) { const id = o.dataset.open; selected.has(id) ? selected.delete(id) : selected.add(id); haptic.tick(); return renderShelf(); }
   if (o) return openPad(o.dataset.open);
   if (e.target.closest('#newBtn,[data-new]')) return openCreate();
   if (e.target.closest('#setBtn')) return openSettings();
