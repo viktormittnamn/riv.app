@@ -43,7 +43,7 @@ function syncWidget() {
     return { id: b.id, title: b.title, icon: b.icon || '', left: remaining(b), total: b.total, next: b.torn.length + 1,
       daily: b.pace === 'daily', lastDay: l ? dayKey(l.at) : null, bg: c.bg, ink: c.ink, muted: c.muted };
   });
-  updateWidget(JSON.stringify({ pads }));
+  updateWidget(JSON.stringify({ lang: getLang(), pads }));
 }
 
 let saveTimer = null;
@@ -131,8 +131,8 @@ function card(b) {
   let sheets = '';
   for (let i = Math.min(3, left - 1); i >= 1; i--) sheets += `<div class="sheet" style="transform:translate(${i * 2}px,${i * 3}px);opacity:${1 - i * 0.22}"></div>`;
   return `<button class="pad-card" type="button" data-open="${b.id}"${sel(b)}>${pick(b)}
-    <div class="mini" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}">${sheets}<div class="face">${b.icon ? `<span class="ico">${b.icon}</span>` : ''}<div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
-    <div style="min-width:0"><h3>${esc(b.title)}${tag(b)}</h3>
+    <div class="mini" data-paper="${b.paper}" style="view-transition-name:pad-${b.id}">${sheets}<div class="face"><div class="num">${left}</div><div class="cap">${t('left')}</div></div></div>
+    <div style="min-width:0"><h3>${b.icon ? b.icon + ' ' : ''}${esc(b.title)}${tag(b)}</h3>
     <div class="meta">${t('tornOf', b.torn.length, b.total)} · ${b.pace === 'daily' ? t('daily') : t('free')}</div>
     <div class="progress"><span style="width:${pct}%"></span></div>
     <div class="chips">${chipFor(b)}</div></div></button>`;
@@ -343,7 +343,12 @@ function bindPad(b) {
   $('#moreBtn').onclick = () => openMenu(b);
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
   on('shareBtn', () => shareBlock(b));
-  on('againBtn', () => { restart(b); save(); audio.unlock(); audio.settle(); renderPad(true); });
+  on('againBtn', () => {
+    const nb = makeBlock({ title: b.title, total: b.total, pace: b.pace, paper: b.paper, icon: b.icon });
+    nb.round = (b.round || 1) + 1;
+    state.blocks.unshift(nb); save(true); audio.unlock(); audio.settle();
+    current = nb.id; renderPad(true);
+  });
   on('toShelfBtn', () => showShelf());
   on('firstBtn', () => { showShelf(); openCreate(); });
   const note = $('#noteIn');
@@ -529,6 +534,7 @@ function closeSheet() {
 }
 function openSheet(html, onReady, label) {
   lastFocus = document.activeElement;
+  $('.toast')?.classList.remove('show');
   overlay.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(label || '')}"><div class="grabber"></div>${html}</div></div>`;
   $('#scrim').addEventListener('click', (e) => { if (e.target.id === 'scrim') closeSheet(); });
   const sh = $('.sheet', overlay);
@@ -666,7 +672,7 @@ function openHistory(b) {
     let cells = '<i></i>'.repeat(lead);
     for (let d = 1; d <= days; d++) {
       const k = dayKey(new Date(y, mo, d)), ns = byDay[k], isToday = k === dayKey();
-      cells += ns ? `<b class="hit${isToday ? ' now' : ''}" title="${ns.map(pad2).join(', ')}">${ns.length > 1 ? `${pad2(ns[0])}+` : pad2(ns[0])}</b>` : `<span${isToday ? ' class="now"' : ''}>${d}</span>`;
+      cells += ns ? `<b class="hit${isToday ? ' now' : ''}" title="${ns.map(pad2).join(', ')}">${d}<small>${ns.length > 1 ? `${ns.length}×` : `nr ${ns[0]}`}</small></b>` : `<span${isToday ? ' class="now"' : ''}>${d}</span>`;
     }
     return `<div class="cal"><div class="cal-m">${t('monthsLong')[mo]} ${y}</div><div class="cal-g">${t('weekdays').map((w) => `<em>${w}</em>`).join('')}${cells}</div></div>`;
   };
@@ -684,7 +690,7 @@ async function shareBlock(b) {
   if (res !== 'fallback') return;
   const url = URL.createObjectURL(blob);
   openSheet(`<h2>${t('yourImage')}</h2><img class="share-img" src="${url}" alt="${esc(b.title)}"><p>${t('holdToSave')}</p>
-    <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => { $('#sClose', sh).onclick = closeSheet; }, t('yourImage'));
+    <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => { $('#sClose', sh).onclick = () => { closeSheet(); URL.revokeObjectURL(url); }; }, t('yourImage'));
 }
 
 /* ---------- Inställningar ---------- */
@@ -806,6 +812,10 @@ async function boot() {
   refreshReminders();
   syncWidget();
   if (isNative()) {
+    import('@capacitor/app').then(({ App }) => App.addListener('appUrlOpen', ({ url }) => {
+      const id = /^rivblock:\/\/pad\/([A-Z0-9]+)/.exec(url || '')?.[1];
+      if (id && getBlock(id)) { closeSheet(); openPad(id); }
+    })).catch(() => {});
     import('@capacitor/app').then(({ App }) => App.addListener('backButton', () => {
       if (overlay.innerHTML) closeSheet();
       else if (current) showShelf();

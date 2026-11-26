@@ -348,6 +348,19 @@ await test('hyllan: lista är standard, växla till skrivbord, fingersvep tar bo
   await ctx.close();
 });
 
+await test('Kör samma igen: det tomma blocket blir kvar, ett nytt varv startar', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn');
+  const done0 = await page.locator('.done-card').count();
+  await page.click('.done-card >> nth=0');
+  await page.click('#againBtn');
+  await page.waitForSelector('#active');
+  assert.match(await page.locator('.stub').first().innerText(), /VARV 2/);
+  await page.click('#backBtn');
+  assert.equal(await page.locator('.done-card').count(), done0, 'trofén ska ligga kvar');
+  await ctx.close();
+});
+
 await test('inga fel i konsolen', async () => {
   assert.deepEqual(errors, []);
 });

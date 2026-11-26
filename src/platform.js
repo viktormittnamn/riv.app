@@ -138,8 +138,10 @@ export async function setupNativeChrome() {
   if (!isNative()) return;
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
-    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light });
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => StatusBar.setStyle({ style: mq.matches ? Style.Dark : Style.Light }).catch(() => {});
+    await apply();
+    mq.addEventListener('change', apply); // iOS byter till mörkt på kvällen
   } catch { /* valfritt */ }
   try { const { SplashScreen } = await import('@capacitor/splash-screen'); await SplashScreen.hide(); } catch { /* valfritt */ }
 }

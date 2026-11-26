@@ -8,20 +8,21 @@ struct Pad: Codable, Identifiable {
     let daily: Bool, lastDay: String?     // "YYYY-MM-DD" senaste rivning
     let bg: String, ink: String, muted: String
 }
-struct Snapshot: Codable { let pads: [Pad] }
+struct Snapshot: Codable { let lang: String?; let pads: [Pad] }
 
-func loadPads() -> [Pad] {
-    guard let s = UserDefaults(suiteName: "group.se.rivblock.app")?.string(forKey: "widget"),
-          let d = s.data(using: .utf8), let snap = try? JSONDecoder().decode(Snapshot.self, from: d) else { return [] }
-    return snap.pads
+func loadSnapshot() -> Snapshot? {
+    guard let s = UserDefaults(suiteName: "group.se.rivblock.app")?.string(forKey: "widget"), let d = s.data(using: .utf8) else { return nil }
+    return try? JSONDecoder().decode(Snapshot.self, from: d)
 }
+func loadPads() -> [Pad] { loadSnapshot()?.pads ?? [] }
 
 func dayKey(_ date: Date) -> String {
     let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
     return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
 }
 
-let sv = Locale.preferredLanguages.first?.hasPrefix("sv") ?? true
+// Appens språkval vinner; annars telefonens språk
+var sv: Bool { (loadSnapshot()?.lang).map { $0 == "sv" } ?? (Locale.preferredLanguages.first?.hasPrefix("sv") ?? true) }
 func L(_ s: String, _ e: String) -> String { sv ? s : e }
 
 extension Color {
@@ -98,10 +99,13 @@ struct RivblockWidgetView: View {
                 }.containerBackground(.clear, for: .widget)
             case .systemMedium:
                 HStack(spacing: 8) {
-                    ForEach(entry.pads.prefix(3)) { p in TicketView(pad: p, date: entry.date, compact: true).clipShape(RoundedRectangle(cornerRadius: 10)) }
+                    ForEach(entry.pads.prefix(3)) { p in
+                        Link(destination: URL(string: "rivblock://pad/\(p.id)")!) { TicketView(pad: p, date: entry.date, compact: true).clipShape(RoundedRectangle(cornerRadius: 10)) }
+                    }
                 }.containerBackground(Color(red: 0.914, green: 0.91, blue: 0.933), for: .widget)
             default:
                 TicketView(pad: entry.pads[0], date: entry.date).containerBackground(Color(hex: entry.pads[0].bg), for: .widget)
+                    .widgetURL(URL(string: "rivblock://pad/\(entry.pads[0].id)"))
             }
         }
     }
