@@ -167,6 +167,11 @@ export async function restorePro() { return 'unavailable'; }
 /* ---------- Widget (bara i iPhone-appen) ----------
    ios/App/App/WidgetBridge.swift lägger JSON i App Group-lådan som widgeten läser. */
 const WidgetBridge = registerPlugin('WidgetBridge');
+/** Rivningar gjorda med widgetens knapp: [{ id, at }] */
+export async function takeWidgetTears() {
+  if (platform() !== 'ios') return [];
+  try { const { json } = await WidgetBridge.takePending(); return JSON.parse(json || '[]'); } catch { return []; }
+}
 export function updateWidget(json) {
   if (platform() !== 'ios') return;
   WidgetBridge.set({ json }).catch(() => {});

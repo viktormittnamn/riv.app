@@ -6,7 +6,7 @@ import {
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
 import * as audio from './audio.js';
-import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, updateWidget, setStatusBar, shareLink, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
+import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, updateWidget, setStatusBar, shareLink, takeWidgetTears, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
 import { drawShare, ensureFonts, toBlob, PAPER_HEX } from './share.js';
 
 const KEY = 'rivblock_v1';
@@ -46,6 +46,14 @@ function syncWidget() {
       daily: b.pace === 'daily', lastDay: l ? dayKey(l.at) : null, bg: c.bg, ink: c.ink, muted: c.muted };
   });
   updateWidget(JSON.stringify({ lang: getLang(), pads }));
+}
+
+/** Lägg in lappar som rivits från widgeten (samma regler som i appen, med widgetens tid) */
+async function applyWidgetTears() {
+  const list = await takeWidgetTears();
+  let n = 0;
+  for (const { id, at } of list) { const b = getBlock(id); if (b && tear(b, '', new Date(at))) n++; }
+  if (n) { save(true); rerender(); }
 }
 
 let saveTimer = null;
@@ -893,8 +901,10 @@ async function boot() {
   if (first) { state.blocks = seedBlocks(); save(true); }
   showShelf();
   setupNativeChrome();
+  await applyWidgetTears();
   refreshReminders();
   syncWidget();
+  if (isNative()) import('@capacitor/app').then(({ App }) => App.addListener('appStateChange', ({ isActive }) => { if (isActive) applyWidgetTears(); })).catch(() => {});
   if (isNative()) {
     import('@capacitor/app').then(({ App }) => App.addListener('appUrlOpen', ({ url }) => {
       const id = /^rivblock:\/\/pad\/([A-Z0-9]+)/.exec(url || '')?.[1];
