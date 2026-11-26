@@ -59,15 +59,10 @@ struct TearIntent: AppIntent {
     }
 }
 
-/// Avrivningen: gamla lappen faller ner och vrider sig från hörnet
-struct Fall: ViewModifier {
-    let on: Bool
-    func body(content: Content) -> some View {
-        content.rotationEffect(.degrees(on ? 16 : 0), anchor: .topTrailing).offset(y: on ? 140 : 0).opacity(on ? 0 : 1)
-    }
-}
+/// Avrivningen: gamla lappen glider ut nedåt och tonar bort
 extension AnyTransition {
-    static var tearOff: AnyTransition { .asymmetric(insertion: .opacity, removal: .modifier(active: Fall(on: true), identity: Fall(on: false))) }
+    // Widgets spelar bara inbyggda övergångar: glid ut nedåt + tona
+    static var tearOff: AnyTransition { .asymmetric(insertion: .opacity, removal: .move(edge: .bottom).combined(with: .opacity)) }
 }
 
 struct Entry: TimelineEntry { let date: Date; let pads: [Pad] }
@@ -102,7 +97,7 @@ struct TicketView: View {
             }.padding(.horizontal, 10).padding(.top, 6)
             Spacer(minLength: 0)
             Text("\(pad.left)").font(.system(size: compact ? 40 : 48, weight: .black).width(.condensed)).foregroundStyle(ink)
-                .contentTransition(.numericText(countsDown: true))
+                .contentTransition(.numericText(value: Double(pad.left)))
                 .padding(.horizontal, 10).minimumScaleFactor(0.6).lineLimit(1)
             Text(rested(pad, date) ? L("Klar idag", "Done today") : L("kvar", "left")).font(.system(size: 10, weight: .medium, design: .monospaced)).textCase(.uppercase).foregroundStyle(muted)
                 .padding(.horizontal, 10)
