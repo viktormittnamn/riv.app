@@ -656,6 +656,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 setInterval(checkDay, 60000);
 
 async function boot() {
+  // iOS släpper bara upp ljud vid touchend/click, inte pointerdown
+  for (const ev of ['touchend', 'click']) document.addEventListener(ev, audio.unlock, { passive: true });
   makeNoise();
   const raw = await loadRaw(KEY);
   let parsed = null;

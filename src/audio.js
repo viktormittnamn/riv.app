@@ -20,7 +20,11 @@ export function unlock() {
         d[i] = w * 0.65 + (b0 + b1 + b2) * 0.35;
       }
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state !== 'running') {
+      ctx.resume();
+      // iOS: en tyst buffert inom användarens tryck låser upp ljudet på riktigt
+      const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0);
+    }
   } catch { /* inget ljud */ }
 }
 
