@@ -1,5 +1,5 @@
 // Plattformslager: samma anrop i webbläsaren och i den inbyggda appen (Capacitor).
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -150,3 +150,11 @@ export async function setupNativeChrome() {
 export const PRICE_LABEL = '49 kr';
 export async function buyPro() { return 'unavailable'; }
 export async function restorePro() { return 'unavailable'; }
+
+/* ---------- Widget (bara i iPhone-appen) ----------
+   ios/App/App/WidgetBridge.swift lägger JSON i App Group-lådan som widgeten läser. */
+const WidgetBridge = registerPlugin('WidgetBridge');
+export function updateWidget(json) {
+  if (platform() !== 'ios') return;
+  WidgetBridge.set({ json }).catch(() => {});
+}

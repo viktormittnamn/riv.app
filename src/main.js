@@ -6,8 +6,8 @@ import {
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
 import * as audio from './audio.js';
-import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
-import { drawShare, ensureFonts, toBlob } from './share.js';
+import { loadRaw, saveRaw, haptic, setHaptics, shareImage, saveTextFile, remindersSupported, scheduleReminders, updateWidget, setupNativeChrome, isNative, buyPro, restorePro, PRICE_LABEL } from './platform.js';
+import { drawShare, ensureFonts, toBlob, PAPER_HEX } from './share.js';
 
 const KEY = 'rivblock_v1';
 const PAYWALL = false; // slås på när köp i App Store är kopplat
@@ -36,10 +36,20 @@ function refreshReminders(ask = false) {
   return Promise.resolve(true);
 }
 
+/** Widgeten visar de tre viktigaste egna blocken (samma ordning som hyllan) */
+function syncWidget() {
+  const pads = shelfOrder(state.blocks.filter((b) => !b.intro && !b.example)).active.slice(0, 3).map((b) => {
+    const c = PAPER_HEX[b.paper], l = lastTorn(b);
+    return { id: b.id, title: b.title, icon: b.icon || '', left: remaining(b), total: b.total, next: b.torn.length + 1,
+      daily: b.pace === 'daily', lastDay: l ? dayKey(l.at) : null, bg: c.bg, ink: c.ink, muted: c.muted };
+  });
+  updateWidget(JSON.stringify({ pads }));
+}
+
 let saveTimer = null;
 function save(now = false) {
   clearTimeout(saveTimer);
-  const go = () => { saveRaw(KEY, JSON.stringify(state)); refreshReminders(); };
+  const go = () => { saveRaw(KEY, JSON.stringify(state)); refreshReminders(); syncWidget(); };
   if (now) go(); else saveTimer = setTimeout(go, 150);
 }
 window.addEventListener('pagehide', () => save(true));
@@ -774,6 +784,7 @@ async function boot() {
   showShelf();
   setupNativeChrome();
   refreshReminders();
+  syncWidget();
   if (isNative()) {
     import('@capacitor/app').then(({ App }) => App.addListener('backButton', () => {
       if (overlay.innerHTML) closeSheet();
