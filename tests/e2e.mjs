@@ -132,7 +132,7 @@ await test('tomt exempelblock visar statistik och delningsbild', async () => {
   await page.waitForSelector('.done.show');
   await page.screenshot({ path: SHOTS + '06-done.png' });
   await page.click('#shareBtn');
-  await page.waitForSelector('.share-img');
+  await page.waitForSelector('.share-img', { timeout: 20000 }); // bilden ritas på canvas efter att typsnitten laddats
   const ok = await page.locator('.share-img').evaluate((img) => new Promise((r) => (img.complete ? r(img.naturalWidth) : (img.onload = () => r(img.naturalWidth)))));
   assert.equal(ok, 1080);
   await page.locator('.share-img').screenshot({ path: SHOTS + '07-share.png' });
@@ -450,6 +450,18 @@ await test('alla sju lappstilar går att riva', async () => {
     assert.equal(await binding(page), '4 KVAR', st);
     await page.click('#backBtn'); await page.waitForTimeout(150);
   }
+  await ctx.close();
+});
+
+await test('mål ("vad räknas som klart") visas och sista lappen firas', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#backBtn'); await page.click('#newBtn');
+  await page.fill('#cTitle', 'Pass'); await page.fill('#cGoal', 'minst 45 minuter');
+  await page.click('[data-n="5"]'); await page.click('[data-pace="free"]'); await page.click('#cGo');
+  assert.match(await page.locator('.pad-goal').innerText(), /minst 45 minuter/);
+  for (let i = 0; i < 5; i++) await tearDrag(page);
+  await page.waitForSelector('.done.fresh');
+  assert.match(await page.locator('.done').innerText(), /minst 45 minuter/i);
   await ctx.close();
 });
 

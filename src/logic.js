@@ -8,7 +8,7 @@ export const PAPER_GROUPS = {
 };
 export const PAPERS = Object.values(PAPER_GROUPS).flat();
 export const STYLES = ['lott', 'affisch', 'bio', 'kvitto', 'klipp', 'boarding', 'kalender'];
-export const FREE_PAPERS = ['rosa', 'mint', 'kvitto'];
+export const FREE_STYLES = ['lott', 'affisch'];
 export const MAX_TOTAL = 100;
 export const ICONS = ['🏃', '💪', '🧘', '🚶', '🚴', '🏊', '🧊', '📚', '✍️', '🎸', '💧', '🥦', '🍬', '🍷', '☕', '😴', '📵', '🧹', '💸', '❤️'];
 export const SCHEMA = 2;
@@ -51,8 +51,9 @@ export function clampTotal(n) {
   return Math.max(1, Math.min(MAX_TOTAL, v));
 }
 
-export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', icon = '', style = 'lott', now = new Date() }) {
+export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', icon = '', style = 'lott', goal = '', now = new Date() }) {
   return {
+    goal: String(goal || '').trim().slice(0, 80),
     icon: cleanIcon(icon),
     style: STYLES.includes(style) ? style : 'lott',
     id: uid(),
@@ -166,7 +167,8 @@ export function migrate(raw) {
         draft: String(b.draft || '').slice(0, 60),
         round: Number(b.round) || 1,
         icon: cleanIcon(b.icon),
-        style: STYLES.includes(b.style) ? b.style : 'lott'
+        style: STYLES.includes(b.style) ? b.style : 'lott',
+        goal: String(b.goal || '').slice(0, 80)
       };
       if (b.pinned === true) blk.pinned = true;
       if (b.example) blk.example = true;
@@ -194,7 +196,8 @@ export function canCreate(state, paywall) {
   if (!paywall || state.settings.pro) return true;
   return state.blocks.filter((b) => !isDone(b) && !b.example && !b.intro).length < 2;
 }
-export const paperLocked = (paper, state, paywall) => !!paywall && !state.settings.pro && !FREE_PAPERS.includes(paper);
+export const paperLocked = (paper, state, paywall) => !!paywall && !state.settings.pro && !PAPER_GROUPS.colors.includes(paper);
+export const styleLocked = (style, state, paywall) => !!paywall && !state.settings.pro && !FREE_STYLES.includes(style);
 
 /**
  * Datum för påminnelser kommande dagar. Hoppar över idag om klockan passerat eller om

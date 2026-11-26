@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dayKey, dayDiff, makeBlock, tear, undo, restart, lockedToday, canTear, isDone, remaining,
-  setTotal, stats, status, shelfOrder, migrate, exportBackup, importBackup, canCreate, paperLocked, clampTotal
+  setTotal, stats, status, shelfOrder, migrate, exportBackup, importBackup, canCreate, paperLocked, styleLocked, clampTotal
 } from '../src/logic.js';
 
 const D = (s) => new Date(s);
@@ -134,9 +134,11 @@ describe('betalvägg', () => {
   });
   it('papper låses bara med betalvägg', () => {
     const s = migrate({});
-    expect(paperLocked('kol', s, false)).toBe(false);
-    expect(paperLocked('kol', s, true)).toBe(true);
-    expect(paperLocked('rosa', s, true)).toBe(false);
+    expect(paperLocked('guld', s, false)).toBe(false);
+    expect(paperLocked('guld', s, true)).toBe(true);
+    expect(paperLocked('kol', s, true)).toBe(false);
+    expect(styleLocked('lott', s, true)).toBe(false);
+    expect(styleLocked('kalender', s, true)).toBe(true);
   });
 });
 

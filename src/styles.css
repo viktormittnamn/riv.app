@@ -553,3 +553,13 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 .swatch-group { display: grid; gap: 6px; }
 .swatch-group + .swatch-group { margin-top: 6px; }
 .swatch-group > span { font: 500 9.5px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+
+.pad-goal { font: 500 12px var(--f-mono); letter-spacing: .06em; color: var(--muted); text-align: center; max-width: 34ch; margin-top: -6px; }
+.goal-in { height: 40px; font-size: 14px; }
+
+/* Sista lappen: stämpeln slås i och lapparna dyker upp en efter en */
+.done.fresh .d-stamp { animation: slam .55s .35s cubic-bezier(.3, 1.6, .5, 1) both; }
+.done.fresh .stubs .s { animation: pop .32s cubic-bezier(.3, 1.4, .5, 1) both; animation-delay: calc(var(--i, 0) * 35ms + .7s); }
+@keyframes slam { from { transform: scale(2.6) rotate(-16deg); opacity: 0; } to { transform: rotate(-4deg); opacity: .85; } }
+@keyframes pop { from { transform: translateY(8px) scale(.8); opacity: 0; } }
+.styles button { position: relative; }

@@ -2,7 +2,7 @@ import './fonts.css';
 import './styles.css';
 import {
   PAPERS, PAPER_GROUPS, ICONS, isoWeek, makeBlock, tear, undo, restart, setTotal, isDone, lastTorn, remaining, lockedToday, canTear,
-  status, shelfOrder, stats, reminderPlan, challengeQuery, parseChallenge, migrate, exportBackup, importBackup, canCreate, paperLocked, pad2, dayKey
+  status, shelfOrder, stats, reminderPlan, challengeQuery, parseChallenge, migrate, exportBackup, importBackup, canCreate, paperLocked, styleLocked, pad2, dayKey
 } from './logic.js';
 import { t, setLang, getLang, fmtDate, fmtDateLower } from './i18n.js';
 import * as audio from './audio.js';
@@ -401,8 +401,8 @@ function doneHTML(b) {
        <div class="row"><button class="link-btn" type="button" id="againBtn">${t('again')}</button><button class="link-btn" type="button" id="toShelfBtn">${t('toShelf')}</button></div>`;
   return `<div class="done" data-paper="${b.paper}">
     <div class="d-head"><div class="d-stamp">${t('emptyStamp')}</div><h3>${esc(b.title)}</h3>
-      <div class="d-meta">${t('doneMeta', b.total, span)}</div><div class="d-meta">${t('doneStats', st.days, st.activeDays)}</div></div>
-    <div class="stubs" style="${b.total <= 6 ? `grid-template-columns:repeat(${b.total},1fr)` : b.total <= 12 ? 'grid-template-columns:repeat(6,1fr)' : ''}">${b.torn.map((x) => `<div class="s${x.note ? ' noted' : ''}"><b>${pad2(x.n)}</b><span>${fmtDate(x.at)}</span></div>`).join('')}</div>
+      <div class="d-meta">${t('doneMeta', b.total, span)}</div>${b.goal ? `<div class="d-meta">${esc(t('goalShow', b.goal))}</div>` : ''}<div class="d-meta">${t('doneStats', st.days, st.activeDays)}</div></div>
+    <div class="stubs" style="${b.total <= 6 ? `grid-template-columns:repeat(${Math.max(b.total, 4)},1fr)` : b.total <= 12 ? 'grid-template-columns:repeat(6,1fr)' : ''}">${b.torn.map((x, i) => `<div class="s${x.note ? ' noted' : ''}" style="--i:${i}"><b>${pad2(x.n)}</b><span>${fmtDate(x.at)}</span></div>`).join('')}</div>
     ${notes.length ? `<div class="notes">${notes.map((x) => `<div><b>${pad2(x.n)}</b><span>${esc(x.note)}</span></div>`).join('')}</div>` : ''}
     <div class="d-actions">${actions}</div></div>`;
 }
@@ -422,7 +422,7 @@ function renderPad(entering) {
     if (left > 1 && !locked) h += `<div class="ticket preview" aria-hidden="true">${ticketHTML(b, n + 1, 'preview')}</div>`;
     h += `<div class="ticket active${locked ? ' locked' : ''}${entering ? ' entering' : ''}" id="active" tabindex="0" role="button" aria-label="${esc(t('tearLabel', n, b.total))}"${locked ? ' aria-disabled="true"' : ''}>${ticketHTML(b, n, 'active', locked)}</div>`;
   }
-  h += `</div><div class="pad-status" id="padStatus">${statusLine(b)}</div></div>`;
+  h += `</div>${b.goal && !done ? `<div class="pad-goal">${esc(t('goalShow', b.goal))}</div>` : ''}<div class="pad-status" id="padStatus">${statusLine(b)}</div></div>`;
   padView.innerHTML = h;
   if (done) requestAnimationFrame(() => $('.done', padView)?.classList.add('show'));
   bindPad(b);
@@ -594,7 +594,7 @@ function completeTear(vel) {
   if (usingKeyboard) $('#active')?.focus({ preventScroll: true });
   announce(t('tornAnnounce', n, remaining(b)));
 
-  if (finished) { audio.chime(); setTimeout(() => haptic.success(), 250); }
+  if (finished) celebrate(b);
   else if (lockedToday(b)) { setTimeout(() => { audio.thud(); haptic.snap(); }, 380); }
   if (!b.intro) toast(t('tornAnnounce', n, remaining(b)), t('undo').split(' ')[0], () => doUndo(b));
 
@@ -610,6 +610,37 @@ function completeTear(vel) {
     { transform: `perspective(900px) translate3d(${fx}px,540px,0) rotate(${rot}deg) rotateY(${s * 10}deg)`, opacity: 0 }
   ], { duration: 820, easing: 'cubic-bezier(.4,.05,.7,.4)', fill: 'forwards' });
   setTimeout(() => { ghost.remove(); drag.busy = false; }, 840);
+}
+
+/** Sista lappen: konfetti av papperslappar, stämpeln slås i, klang + duns + lång vibration */
+function celebrate(b) {
+  audio.chime();
+  setTimeout(() => { audio.thud(); haptic.success(); }, 700);
+  $('.done', padView)?.classList.add('fresh');
+  if (reduceMotion()) return;
+  const P = PAPER_HEX[b.paper] || PAPER_HEX.rosa, colors = [P.bg, P.ink, P.stamp, P.muted, '#ef4a2f'];
+  const c = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:150';
+  c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+  document.body.appendChild(c);
+  const x = c.getContext('2d'); x.scale(dpr, dpr);
+  const sr = $('#stage')?.getBoundingClientRect() || { left: innerWidth / 2, top: innerHeight / 3, width: 0 };
+  const bits = Array.from({ length: 90 }, () => ({
+    x: sr.left + sr.width / 2 + (Math.random() - 0.5) * sr.width * 0.6, y: sr.top + 40,
+    vx: (Math.random() - 0.5) * 11, vy: -6 - Math.random() * 9, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+    w: 6 + Math.random() * 8, h: 4 + Math.random() * 6, col: colors[Math.floor(Math.random() * colors.length)]
+  }));
+  const t0 = performance.now();
+  const frame = (now) => {
+    const k = (now - t0) / 1900;
+    x.clearRect(0, 0, innerWidth, innerHeight);
+    for (const p of bits) {
+      p.vy += 0.32; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      x.save(); x.globalAlpha = Math.max(0, 1 - k * k); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.col; x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); x.restore();
+    }
+    if (k < 1) requestAnimationFrame(frame); else c.remove();
+  };
+  requestAnimationFrame(frame);
 }
 
 function doUndo(b) {
@@ -652,6 +683,8 @@ function blockForm(b) {
   const counts = [5, 10, 21, 30, 50];
   return `<div class="field"><label class="label" for="cTitle">${t('whatTitle')}</label>
       <input class="text-in" id="cTitle" maxlength="40" placeholder="${t('titlePh')}" autocomplete="off" enterkeyhint="done" value="${b ? esc(b.title) : ''}">
+      <input class="text-in goal-in" id="cGoal" maxlength="80" placeholder="${t('goalPh')}" aria-label="${t('goal')}" autocomplete="off" value="${b ? esc(b.goal || '') : ''}">
+      <span class="fine">${t('goal')}</span>
       ${b ? '' : `<div class="seg sug">${t('suggestions').map(([s], i) => `<button type="button" data-sug="${i}">${esc(s)}</button>`).join('')}</div>`}</div>
     <div class="field"><span class="label" id="cCountLbl">${t('count')}</span><div class="seg" role="group" aria-labelledby="cCountLbl">
       ${counts.map((n) => `<button type="button" data-n="${n}">${n}</button>`).join('')}
@@ -664,7 +697,7 @@ function blockForm(b) {
       <button type="button" data-ic="" aria-label="${t('noIcon')}">–</button>${ICONS.map((x) => `<button type="button" data-ic="${x}">${x}</button>`).join('')}</div></div>
     <div class="field"><span class="label">${t('style')}</span><div class="seg styles">
       ${[['lott', 'Nº07', 'styleLott'], ['affisch', '07', 'styleAffisch'], ['bio', '07▤', 'styleBio'], ['kvitto', '≡07', 'styleKvitto'], ['klipp', '●●○', 'styleKlipp'], ['boarding', '06→07', 'styleBoarding'], ['kalender', '07', 'styleKalender']]
-        .map(([k, demo, lbl]) => `<button type="button" data-st="${k}"><b class="st-demo st-${k}">${demo}</b>${t(lbl)}</button>`).join('')}</div></div>
+        .map(([k, demo, lbl]) => `<button type="button" data-st="${k}"><b class="st-demo st-${k}">${demo}</b>${t(lbl)}${styleLocked(k, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>
     <div class="field"><span class="label">${t('paper')}</span>
       ${Object.entries(PAPER_GROUPS).map(([g, list]) => `<div class="swatch-group"><span>${t('paperGroups')[g]}</span><div class="swatches">
       ${list.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`).join('')}</div>`;
@@ -693,7 +726,7 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
     else if ((x = e.target.closest('[data-n]'))) { f.total = +x.dataset.n; sync(); }
     else if ((x = e.target.closest('[data-pace]'))) { f.pace = x.dataset.pace; sync(); }
     else if ((x = e.target.closest('[data-ic]'))) { f.icon = x.dataset.ic; sync(); haptic.tick(); }
-    else if ((x = e.target.closest('[data-st]'))) { f.style = x.dataset.st; sync(); haptic.tick(); }
+    else if ((x = e.target.closest('[data-st]'))) { if (styleLocked(x.dataset.st, state, PAYWALL)) return openPro(t('proStyle')); f.style = x.dataset.st; sync(); haptic.tick(); }
     else if ((x = e.target.closest('[data-p]'))) {
       if (paperLocked(x.dataset.p, state, PAYWALL)) return openPro(t('proPaper'));
       f.paper = x.dataset.p; sync();
@@ -715,7 +748,7 @@ function openCreate(pre = null) {
   openSheet(`<h2>${t('newBlock')}</h2>${blockForm(null)}<button class="pill-btn accent big" type="button" id="cGo">${t('create')}</button>`, (sh) => {
     if (pre) $('#cTitle', sh).value = pre.title;
     wireForm(sh, f, (title) => {
-      const b = makeBlock({ title, ...f });
+      const b = makeBlock({ title, ...f, goal: $('#cGoal', sh).value });
       state.blocks = state.blocks.filter((x) => !(x.intro && isDone(x))); // färdigt intro behövs inte längre
       state.blocks.unshift(b); save(true); closeSheet();
       audio.unlock(); audio.settle(); haptic.snap();
@@ -728,7 +761,7 @@ function openEdit(b) {
   const f = { total: b.total, pace: b.pace, paper: b.paper, icon: b.icon || '', style: b.style || 'lott' };
   openSheet(`<h2>${t('edit')}</h2>${blockForm(b)}<button class="pill-btn accent big" type="button" id="cGo">${t('saveChanges')}</button>`, (sh) => {
     wireForm(sh, f, (title) => {
-      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; b.icon = f.icon; b.style = f.style; setTotal(b, f.total);
+      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; b.icon = f.icon; b.style = f.style; b.goal = $('#cGoal', sh).value.trim().slice(0, 80); setTotal(b, f.total);
       delete b.example;
       save(true); closeSheet(); renderPad(false);
     }, Math.max(1, b.torn.length));
