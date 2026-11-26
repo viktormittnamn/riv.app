@@ -402,3 +402,44 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2
 /* Översta raden ligger alltid över blocket (Safari kan låta 3D-lappar fånga tryck) */
 .topbar { position: relative; z-index: 50; }
 .pad-main { position: relative; z-index: 1; }
+
+/* ---------- Lappstilar: Lott (standard) och Affisch ---------- */
+.tbody .bignum, .st-demo { font-family: 'Riv Display', var(--f-display); font-weight: 800; }
+.bar-mode { height: 4px; border-radius: 9px; background: var(--p-line); overflow: hidden; }
+.bar-mode span { display: block; height: 100%; background: var(--p-ink); }
+
+/* Lott: dubbel ram, jättenummer i mitten, prickar för framstegen */
+.tbody.st-lott { padding: 12px; }
+.lt-frame { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px; border: 3px double var(--p-ink); border-radius: 12px; padding: 12px 14px 10px; }
+.lt-no { width: 100%; }
+.lt-big { position: relative; font-size: clamp(104px, 33vw, 146px); line-height: .8; margin: 10px 0 4px; letter-spacing: -.01em; }
+.lt-big sup { position: absolute; top: 4px; left: -26px; font: 700 18px var(--f-body); }
+.lt-title { font-size: 19px; }
+.lt-sub { font: 500 10.5px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--p-muted); }
+.lt-pips { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 230px; margin-top: 4px; }
+.lt-pips.bar-mode { width: 78%; }
+.lt-pips i { width: 7px; height: 7px; border-radius: 50%; border: 1.2px solid var(--p-ink); opacity: .45; }
+.lt-pips i.on { background: var(--p-ink); opacity: 1; }
+.lt-pips i.now { opacity: 1; border-color: var(--p-stamp); box-shadow: 0 0 0 2px var(--p-bg), 0 0 0 3px var(--p-stamp); }
+.st-lott .t-note { width: 100%; text-align: left; }
+.lt-foot { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+.lt-foot .serial { margin: 0; }
+
+/* Affisch: stor titel, nummer som går ut över kanten, streck för framstegen */
+.tbody.st-affisch { padding: 18px 20px 14px; overflow: hidden; }
+.st-affisch .t-row, .st-affisch .af-of, .st-affisch .af-ticks, .st-affisch .t-note { position: relative; z-index: 1; }
+.st-affisch .af-title { font-family: 'Riv Display', var(--f-display); font-weight: 800; font-size: clamp(34px, 11vw, 44px); line-height: .92; text-transform: uppercase; margin-top: 12px; max-width: calc(100% - 84px); overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; position: relative; z-index: 1; }
+.af-ico { font-size: 26px; margin-top: 8px; position: relative; z-index: 1; }
+.st-affisch .stamp { position: absolute; top: 44px; right: 18px; z-index: 1; }
+.af-big { position: absolute; right: -12px; bottom: -32px; font-size: 250px; line-height: .8; letter-spacing: -.03em; margin: 0; pointer-events: none; }
+.af-of { margin-top: auto; font: 600 13px var(--f-mono); letter-spacing: .1em; }
+.af-ticks { display: flex; flex-wrap: wrap; gap: 2px; max-width: 55%; margin-top: 6px; }
+.af-ticks.bar-mode { width: 55%; }
+.af-ticks i { width: 4px; height: 10px; border-radius: 1px; background: var(--p-ink); opacity: .22; }
+.af-ticks i.on { opacity: 1; }
+.af-ticks i.now { opacity: 1; background: var(--p-stamp); }
+.st-affisch .t-note { margin-top: 10px; max-width: 46%; }
+
+/* Val av lappstil i formuläret */
+.styles button { display: inline-flex; align-items: center; gap: 8px; height: 44px; font-family: var(--f-body); }
+.st-demo { font-size: 20px; line-height: 1; }

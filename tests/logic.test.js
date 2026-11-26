@@ -193,3 +193,12 @@ describe('utmaning', () => {
     expect(parseChallenge('?t=x&n=9999&c=evil&i=<b>')).toEqual({ title: 'x', total: 100, pace: 'daily', paper: 'rosa', icon: '' });
   });
 });
+
+import { makeBlock as mk4, migrate as mg4 } from '../src/logic.js';
+describe('lappstil', () => {
+  it('lott som standard, affisch går att välja, skräp blir lott', () => {
+    expect(mk4({ title: 'a', total: 3 }).style).toBe('lott');
+    expect(mk4({ title: 'a', total: 3, style: 'affisch' }).style).toBe('affisch');
+    expect(mg4({ blocks: [{ title: 'x', total: 3, style: 'evil' }] }).blocks[0].style).toBe('lott');
+  });
+});

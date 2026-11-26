@@ -289,22 +289,39 @@ window.addEventListener('popstate', () => {
 /* =========================================================
    BLOCKVYN
    ========================================================= */
+// Framstegsprickar (Lott) / streck (Affisch): rivna fyllda, aktuell markerad. Över 30 lappar blir det en stapel.
+function progress(b, n, cls) {
+  if (b.total > 30) return `<div class="${cls} bar-mode"><span style="width:${Math.round(((n - 1) / b.total) * 100)}%"></span></div>`;
+  return `<div class="${cls}" aria-hidden="true">${Array.from({ length: b.total }, (_, i) => `<i class="${i < n - 1 ? 'on' : i === n - 1 ? 'now' : ''}"></i>`).join('')}</div>`;
+}
+
 function ticketHTML(b, n, kind, locked) {
   const dateLbl = kind === 'active' && !locked ? `${t('today')} ${fmtDate()}` : locked ? t('tomorrow') : t('next');
   const lead = b.intro && b.texts && b.texts[n - 1] ? `<div class="t-lead">${esc(b.texts[n - 1])}</div>` : '';
   const note = kind === 'active' && !b.intro
     ? `<div class="t-note"><label for="noteIn">${t('note')}</label><input id="noteIn" type="text" maxlength="60" autocomplete="off" enterkeyhint="done" placeholder="${t('notePh')}"${locked ? ' disabled' : ''} value="${esc(locked ? '' : b.draft || '')}"></div>`
     : '<div class="t-note"></div>';
-  return `<div class="stub"><span>${esc(b.title)}</span><span>${b.round > 1 ? t('round', b.round) + ' · ' : ''}RB-${b.id}</span></div>
-    <div class="perf"><i class="dots"></i><i class="gap"></i><i class="notch l"></i><i class="notch r"></i></div>
-    <div class="tbody">
-      ${locked ? `<div class="big-stamp">${t('stampTomorrow')}<small>${t('stampTomorrowSub')}</small></div>` : ''}
-      <div class="t-row"><span>${t('ticketNo')}</span><span>${dateLbl}</span></div>
-      <div class="bignum">${pad2(n)}<small>/${pad2(b.total)}</small></div>
-      <div class="t-title">${b.icon ? `<span class="t-ico">${b.icon}</span> ` : ''}${esc(b.title)}</div>${lead}
+  const stampBig = locked ? `<div class="big-stamp">${t('stampTomorrow')}<small>${t('stampTomorrowSub')}</small></div>` : '';
+  const stub = `<div class="stub"><span>${esc(b.title)}</span><span>${b.round > 1 ? t('round', b.round) + ' · ' : ''}RB-${b.id}</span></div>
+    <div class="perf"><i class="dots"></i><i class="gap"></i><i class="notch l"></i><i class="notch r"></i></div>`;
+  const ico = b.icon ? `<span class="t-ico">${b.icon}</span> ` : '';
+  if (b.style === 'affisch') return stub + `<div class="tbody st-affisch">${stampBig}
+      <div class="t-row"><span>${t('ticketNo')} ${pad2(n)}</span><span>${dateLbl}</span></div>
+      <div class="af-title t-title">${esc(b.title)}</div>${b.icon ? `<div class="af-ico">${b.icon}</div>` : ''}${lead}
+      <div class="stamp">${t('tearOff')}</div>
+      <div class="af-big bignum">${pad2(n)}</div>
+      <div class="af-of">${n} / ${b.total}</div>${progress(b, n, 'af-ticks')}
+      ${note}</div>`;
+  // Lott (standard)
+  return stub + `<div class="tbody st-lott">${stampBig}<div class="lt-frame">
+      <div class="t-row lt-no"><span>${t('ticketNo')}</span><span>${dateLbl}</span></div>
+      <div class="lt-big bignum"><sup>Nº</sup>${pad2(n)}</div>
+      <div class="t-title lt-title">${ico}${esc(b.title)}</div>
+      <div class="lt-sub">${t('ofTotal', n, b.total)}</div>${lead}
+      ${progress(b, n, 'lt-pips')}
       ${note}
-      <div class="t-foot"><div><div class="barcode"></div><div class="serial">RB-${b.id}-${pad2(n)}</div></div><div class="stamp">${t('tearOff')}</div></div>
-    </div>`;
+      <div class="lt-foot"><span class="serial">RB-${b.id}-${pad2(n)}</span><span class="stamp">${t('tearOff')}</span></div>
+    </div></div>`;
 }
 
 /** Byt vy med zoom från blocket på hyllan (iOS 18+/Chrome), annars direkt */
@@ -383,7 +400,7 @@ function bindPad(b) {
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
   on('shareBtn', () => shareBlock(b));
   on('againBtn', () => {
-    const nb = makeBlock({ title: b.title, total: b.total, pace: b.pace, paper: b.paper, icon: b.icon });
+    const nb = makeBlock({ title: b.title, total: b.total, pace: b.pace, paper: b.paper, icon: b.icon, style: b.style });
     nb.round = (b.round || 1) + 1;
     state.blocks.unshift(nb); save(true); audio.unlock(); audio.settle();
     current = nb.id; renderPad(true);
@@ -606,6 +623,8 @@ function blockForm(b) {
       <button type="button" data-pace="free"><b>${t('paceFree')}</b><span>${t('paceFreeSub')}</span></button></div></div>
     <div class="field"><span class="label">${t('icon')}</span><div class="icons">
       <button type="button" data-ic="" aria-label="${t('noIcon')}">–</button>${ICONS.map((x) => `<button type="button" data-ic="${x}">${x}</button>`).join('')}</div></div>
+    <div class="field"><span class="label">${t('style')}</span><div class="seg styles">
+      <button type="button" data-st="lott"><b class="st-demo st-l">Nº07</b>${t('styleLott')}</button><button type="button" data-st="affisch"><b class="st-demo st-a">07</b>${t('styleAffisch')}</button></div></div>
     <div class="field"><span class="label">${t('paper')}</span><div class="swatches">
       ${PAPERS.map((p) => `<button type="button" data-p="${p}"><i data-paper="${p}"></i>${t('papers')[p]}${paperLocked(p, state, PAYWALL) ? `<span class="lock">${I.lock}</span>` : ''}</button>`).join('')}</div></div>`;
 }
@@ -618,6 +637,7 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
     sh.querySelectorAll('[data-pace]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.pace === f.pace)));
     sh.querySelectorAll('[data-p]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.p === f.paper)));
     sh.querySelectorAll('[data-ic]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.ic === f.icon)));
+    sh.querySelectorAll('[data-st]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.st === f.style)));
     if (document.activeElement !== ci) ci.value = preset.includes(f.total) ? '' : f.total;
   }
   sync();
@@ -632,6 +652,7 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
     else if ((x = e.target.closest('[data-n]'))) { f.total = +x.dataset.n; sync(); }
     else if ((x = e.target.closest('[data-pace]'))) { f.pace = x.dataset.pace; sync(); }
     else if ((x = e.target.closest('[data-ic]'))) { f.icon = x.dataset.ic; sync(); haptic.tick(); }
+    else if ((x = e.target.closest('[data-st]'))) { f.style = x.dataset.st; sync(); haptic.tick(); }
     else if ((x = e.target.closest('[data-p]'))) {
       if (paperLocked(x.dataset.p, state, PAYWALL)) return openPro(t('proPaper'));
       f.paper = x.dataset.p; sync();
@@ -649,7 +670,7 @@ function wireForm(sh, f, onSubmit, minCount = 1) {
 
 function openCreate(pre = null) {
   if (!canCreate(state, PAYWALL)) return openPro(t('proLimit'));
-  const f = pre ? { total: pre.total, pace: pre.pace, paper: pre.paper, icon: pre.icon } : { total: 21, pace: 'daily', paper: 'rosa', icon: '' };
+  const f = pre ? { total: pre.total, pace: pre.pace, paper: pre.paper, icon: pre.icon, style: 'lott' } : { total: 21, pace: 'daily', paper: 'rosa', icon: '', style: 'lott' };
   openSheet(`<h2>${t('newBlock')}</h2>${blockForm(null)}<button class="pill-btn accent big" type="button" id="cGo">${t('create')}</button>`, (sh) => {
     if (pre) $('#cTitle', sh).value = pre.title;
     wireForm(sh, f, (title) => {
@@ -663,10 +684,10 @@ function openCreate(pre = null) {
 }
 
 function openEdit(b) {
-  const f = { total: b.total, pace: b.pace, paper: b.paper, icon: b.icon || '' };
+  const f = { total: b.total, pace: b.pace, paper: b.paper, icon: b.icon || '', style: b.style || 'lott' };
   openSheet(`<h2>${t('edit')}</h2>${blockForm(b)}<button class="pill-btn accent big" type="button" id="cGo">${t('saveChanges')}</button>`, (sh) => {
     wireForm(sh, f, (title) => {
-      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; b.icon = f.icon; setTotal(b, f.total);
+      b.title = title.slice(0, 40); b.pace = f.pace; b.paper = f.paper; b.icon = f.icon; b.style = f.style; setTotal(b, f.total);
       delete b.example;
       save(true); closeSheet(); renderPad(false);
     }, Math.max(1, b.torn.length));

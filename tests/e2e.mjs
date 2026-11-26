@@ -429,6 +429,17 @@ await test('dela: förhandsvisning med anteckningar', async () => {
   await ctx.close();
 });
 
+await test('lappstil: Lott som standard, Affisch går att välja och ändra', async () => {
+  const { ctx, page } = await fresh();
+  assert.equal(await page.locator('#active .st-lott').count(), 1, 'intro är Lott');
+  await page.click('#backBtn'); await page.click('#newBtn');
+  await page.fill('#cTitle', 'Yoga'); await page.click('[data-st="affisch"]'); await page.click('#cGo');
+  await page.waitForSelector('#active .st-affisch');
+  await page.click('#moreBtn'); await page.click('#mEdit'); await page.click('[data-st="lott"]'); await page.click('#cGo');
+  assert.equal(await page.locator('#active .st-lott').count(), 1);
+  await ctx.close();
+});
+
 await test('inga fel i konsolen', async () => {
   assert.deepEqual(errors, []);
 });

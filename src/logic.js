@@ -1,6 +1,7 @@
 // Ren logik utan DOM — allt här är enhetstestat (tests/logic.test.js)
 
 export const PAPERS = ['rosa', 'smor', 'mint', 'himmel', 'kvitto', 'kol'];
+export const STYLES = ['lott', 'affisch'];
 export const FREE_PAPERS = ['rosa', 'mint', 'kvitto'];
 export const MAX_TOTAL = 100;
 export const ICONS = ['🏃', '💪', '🧘', '🚶', '🚴', '🏊', '🧊', '📚', '✍️', '🎸', '💧', '🥦', '🍬', '🍷', '☕', '😴', '📵', '🧹', '💸', '❤️'];
@@ -35,9 +36,10 @@ export function clampTotal(n) {
   return Math.max(1, Math.min(MAX_TOTAL, v));
 }
 
-export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', icon = '', now = new Date() }) {
+export function makeBlock({ title, total, pace = 'daily', paper = 'rosa', icon = '', style = 'lott', now = new Date() }) {
   return {
     icon: cleanIcon(icon),
+    style: STYLES.includes(style) ? style : 'lott',
     id: uid(),
     title: String(title || '').trim().slice(0, 40),
     total: clampTotal(total),
@@ -148,7 +150,8 @@ export function migrate(raw) {
         torn: torn.map((t, i) => ({ n: i + 1, at: t.at, note: String(t.note || '').slice(0, 60) })),
         draft: String(b.draft || '').slice(0, 60),
         round: Number(b.round) || 1,
-        icon: cleanIcon(b.icon)
+        icon: cleanIcon(b.icon),
+        style: STYLES.includes(b.style) ? b.style : 'lott'
       };
       if (b.pinned === true) blk.pinned = true;
       if (b.example) blk.example = true;
