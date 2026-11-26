@@ -267,7 +267,7 @@ shelfView.addEventListener('click', (e) => {
 
 let ignorePop = false;
 function showShelf(fromPop = false) {
-  if (fromPop !== true && history.state && history.state.rb === 'pad') { ignorePop = true; try { history.back(); } catch { ignorePop = false; } }
+  if (fromPop !== true && !isNative() && history.state && history.state.rb === 'pad') { ignorePop = true; try { history.back(); } catch { ignorePop = false; } }
   current = null;
   renderShelf();
   padView.hidden = true; shelfView.hidden = false;
@@ -302,11 +302,14 @@ function ticketHTML(b, n, kind, locked) {
 /** Byt vy med zoom från blocket på hyllan (iOS 18+/Chrome), annars direkt */
 function morph(fn) {
   if (!document.startViewTransition || reduceMotion()) return fn();
-  document.startViewTransition(fn);
+  let ran = false;
+  const once = () => { if (!ran) { ran = true; fn(); } };
+  try { document.startViewTransition(once); } catch { once(); }
+  setTimeout(once, 400); // om övergången hänger sig byter vi vy ändå
 }
 
 function openPad(id, entering = false) {
-  if (!current) { try { history.pushState({ rb: 'pad' }, ''); } catch { /* */ } }
+  if (!current && !isNative()) { try { history.pushState({ rb: 'pad' }, ''); } catch { /* */ } }
   current = id;
   shelfView.hidden = true; padView.hidden = false;
   renderPad(entering);
