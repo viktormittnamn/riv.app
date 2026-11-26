@@ -2,8 +2,10 @@
 // Syntetiskt brus används tills inspelningen är laddad.
 import ripUrl from './sounds/rip.mp3';
 
-let ctx = null, buf = null, enabled = true, sample = null, loading = false;
+let ctx = null, buf = null, enabled = true, sample = null, loading = false, lastError = '';
 export const setSound = (on) => { enabled = on; };
+/** För felsökning i Inställningar: vad ljudmotorn gör just nu */
+export const status = () => ({ enabled, ctx: ctx ? ctx.state : 'saknas', sample: sample ? 'laddad' : loading ? 'laddas/misslyckad' : 'ej startad', rate: ctx ? ctx.sampleRate : 0, error: lastError });
 
 export function unlock() {
   if (!enabled) return;
@@ -26,7 +28,7 @@ export function unlock() {
       loading = true;
       // ripUrl är en inbyggd data-URL; avkoda direkt (fetch av data: kan blockeras av CSP)
       const bytes = Uint8Array.from(atob(ripUrl.split(',')[1]), (c) => c.charCodeAt(0));
-      ctx.decodeAudioData(bytes.buffer).then((b) => { sample = b; }).catch(() => {});
+      ctx.decodeAudioData(bytes.buffer).then((b) => { sample = b; }).catch((e) => { lastError = 'avkodning: ' + (e && e.message || e); });
     }
     if (ctx.state !== 'running') {
       ctx.resume();
@@ -81,7 +83,7 @@ function src() { const s = ctx.createBufferSource(); s.buffer = buf; return s; }
 export function rip(paper, vel = 0.5, prog = 0.5) {
   if (!ready()) return;
   // inspelningens svaga rivdel (0,05–0,22 s) följer hur långt fingret kommit
-  if (sample) { try { grain(paper, 0.05 + prog * 0.15 + Math.random() * 0.01, 0.045, Math.min(1.3, 0.45 + vel * 0.5)); } catch { /* */ } return; }
+  if (sample) { try { grain(paper, 0.05 + prog * 0.15 + Math.random() * 0.01, 0.045, Math.min(1.3, 0.45 + vel * 0.5)); } catch (e) { lastError = 'rip: ' + e.message; } return; }
   try {
     const t = ctx.currentTime, p = prof(paper), s = src(), dur = 0.02 + Math.random() * 0.018;
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
@@ -99,7 +101,7 @@ export function rip(paper, vel = 0.5, prog = 0.5) {
 /** Det sista ryck-ljudet när lappen lossnar */
 export function snap(paper) {
   if (!ready()) return;
-  if (sample) { try { grain(paper, 0.19, 0.3, 1.25, 0.02); } catch { /* */ } return; } // det kraftiga rycket
+  if (sample) { try { grain(paper, 0.19, 0.3, 1.25, 0.02); } catch (e) { lastError = 'snap: ' + e.message; } return; } // det kraftiga rycket
   try {
     const t = ctx.currentTime, p = prof(paper), s = src();
     const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.85;

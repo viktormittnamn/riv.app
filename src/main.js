@@ -852,6 +852,7 @@ function openSettings() {
         <p class="fine">${t('backupReplace')}</p><button class="pill-btn" type="button" id="sImportGo">${t('backupLoad')}</button></div></div>
     ${hasExamples ? `<button class="pill-btn ghost" type="button" id="sEx">${t('removeExamples')}</button>` : ''}
     ${PAYWALL && !s.pro ? `<button class="pill-btn accent" type="button" id="sPro">${t('proTitle')}</button>` : ''}
+    <div class="field"><button class="pill-btn ghost" type="button" id="sTest">${t('soundTest')}</button><p class="fine mono" id="sTestOut"></p></div>
     <div class="field"><span class="label">${t('about')}</span><p class="fine">${t('aboutText')}</p><p class="fine">${t('version')} ${VERSION}</p></div>
     <button class="pill-btn big" type="button" id="sClose">${t('close')}</button>`, (sh) => {
     const syncLang = () => sh.querySelectorAll('[data-lang]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.lang === s.lang)));
@@ -890,6 +891,10 @@ function openSettings() {
     const ex = $('#sEx', sh);
     if (ex) ex.onclick = () => { state.blocks = state.blocks.filter((b) => !b.example && !b.intro); save(true); closeSheet(); showShelf(); toast(t('examplesRemoved')); };
     const pro = $('#sPro', sh); if (pro) pro.onclick = () => openPro();
+    $('#sTest', sh).onclick = () => {
+      audio.unlock(); audio.snap('rosa');
+      setTimeout(() => { const st = audio.status(); $('#sTestOut', sh).textContent = `ljud ${st.enabled ? 'på' : 'av'} · motor ${st.ctx} · inspelning ${st.sample} · ${st.rate} Hz${st.error ? ' · fel: ' + st.error : ''}`; }, 400);
+    };
     $('#sClose', sh).onclick = closeSheet;
   }, t('settings'));
 }
